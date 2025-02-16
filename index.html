@@ -180,7 +180,7 @@
     // -----------------------------
     const i18n = {
       de: {
-        mainTitle: "Kwikpen Kalkulator",
+        mainTitle: "Mounjaro Kwikpen Kalkulator",
         labelPenType: "Pen Auswahl:",
         labelClicks: "Anzahl Klicks:",
         labelDose: "Dosis (mg):",
@@ -207,7 +207,7 @@
           "In der letzten Woche könnten ggf. 60 Klicks benötigt werden, um den Pen vollständig zu entleeren."
       },
       en: {
-        mainTitle: "Kwikpen Calculator",
+        mainTitle: "Mounjaro Kwikpen Calculator",
         labelPenType: "Select Pen:",
         labelClicks: "Number of clicks:",
         labelDose: "Dose (mg):",
@@ -397,19 +397,29 @@
     // -----------------------------
     // Update-Funktionen
     // -----------------------------
-    function updatePriceInfo(penType, clicks) {
+    // NEUE Logik: Preis pro mg basiert auf der *aktuellen* Dosis
+    function updatePriceInfo(penType, clicks, dose) {
       const penPriceVal = PRICES[penType];
-      const table = LOOKUP_TABLES[penType];
-      const maxDose = table.doses[table.doses.length - 1];
       const dosesPerPen = (clicks > 0) ? Math.floor(DOSES_PER_PEN / clicks) : 0;
-      
+
+      // Pen-Preis
       elements.penPrice.textContent = `${penPriceVal.toFixed(2)} €`;
-      elements.dosePrice.textContent = (dosesPerPen > 0)
-        ? `${(penPriceVal / dosesPerPen).toFixed(2)} €`
-        : '-';
-      elements.mgPrice.textContent = (maxDose > 0)
-        ? `${(penPriceVal / maxDose).toFixed(2)} €`
-        : '-';
+
+      if (dosesPerPen > 0) {
+        const pricePerDose = penPriceVal / dosesPerPen;
+        elements.dosePrice.textContent = `${pricePerDose.toFixed(2)} €`;
+
+        // Preis pro mg nur, wenn die aktuelle Dosis > 0 ist
+        if (dose > 0) {
+          const pricePerMg = pricePerDose / dose;
+          elements.mgPrice.textContent = `${pricePerMg.toFixed(2)} €`;
+        } else {
+          elements.mgPrice.textContent = "-";
+        }
+      } else {
+        elements.dosePrice.textContent = "-";
+        elements.mgPrice.textContent = "-";
+      }
     }
 
     function updateSummary() {
@@ -419,8 +429,9 @@
       const dose = parseFloat(elements.doseInput.value) || 0;
       const penPriceVal = PRICES[penType];
       const dosesPerPen = (clicks > 0) ? Math.floor(DOSES_PER_PEN / clicks) : 0;
-      const pricePerDose = (dosesPerPen > 0) ? (penPriceVal / dosesPerPen).toFixed(2) : '-';
+      const pricePerDose = (dosesPerPen > 0) ? (penPriceVal / dosesPerPen).toFixed(2) : "-";
 
+      // Zusammenfassungs-Text
       if (penType && clicks > 0 && dose > 0 && dosesPerPen > 0) {
         elements.summaryText.textContent = t.summaryText(
           penType,
@@ -430,9 +441,10 @@
           pricePerDose
         );
       } else {
-        elements.summaryText.textContent = '';
+        elements.summaryText.textContent = "";
       }
 
+      // Warnung bei nicht-exakter Teilung
       if (clicks > 0) {
         const exactWeeks = DOSES_PER_PEN / clicks;
         if (exactWeeks !== Math.floor(exactWeeks)) {
@@ -445,7 +457,7 @@
       }
 
       // Lookup-Matrix von 1 bis 60
-      let rows = '';
+      let rows = "";
       for (let i = 1; i <= 60; i++) {
         const d = calculateDoseFromClicks(i, penType);
         rows += `<tr><td>${i}</td><td>${d.toFixed(2)}</td></tr>`;
@@ -453,10 +465,14 @@
       elements.lookupTableBody.innerHTML = rows;
     }
 
+    // Aktualisiert alle Informationen (Preise, Zusammenfassung etc.)
     function updateAll() {
       const penType = elements.penTypeSelect.value;
       const clicks = parseInt(elements.clicksInput.value) || 0;
-      updatePriceInfo(penType, clicks);
+      const dose = parseFloat(elements.doseInput.value) || 0;
+
+      // Neu: Wir übergeben die aktuelle Dosis an updatePriceInfo
+      updatePriceInfo(penType, clicks, dose);
       updateSummary();
     }
 
@@ -464,10 +480,10 @@
       const t = i18n[currentLang];
       const weeksValue = elements.weeksInput.value;
       if (weeksValue && parseFloat(weeksValue) % 1 !== 0) {
-        elements.weeksError.style.display = 'block';
+        elements.weeksError.style.display = "block";
         elements.weeksError.textContent = t.errorWeeks;
       } else {
-        elements.weeksError.style.display = 'none';
+        elements.weeksError.style.display = "none";
       }
     }
 
@@ -485,11 +501,11 @@
     // -----------------------------
     // Event-Listener
     // -----------------------------
-    elements.languageSelect.addEventListener('change', () => {
+    elements.languageSelect.addEventListener("change", () => {
       setLanguage(elements.languageSelect.value);
     });
 
-    elements.clicksInput.addEventListener('input', () => {
+    elements.clicksInput.addEventListener("input", () => {
       const clicks = parseInt(elements.clicksInput.value) || 0;
       const penType = elements.penTypeSelect.value;
       const dose = calculateDoseFromClicks(clicks, penType);
@@ -500,7 +516,7 @@
       updateAll();
     });
 
-    elements.doseInput.addEventListener('input', () => {
+    elements.doseInput.addEventListener("input", () => {
       const dose = parseFloat(elements.doseInput.value) || 0;
       const penType = elements.penTypeSelect.value;
       const clicks = calculateClicksFromDose(dose, penType);
@@ -511,7 +527,7 @@
       updateAll();
     });
 
-    elements.weeksInput.addEventListener('input', () => {
+    elements.weeksInput.addEventListener("input", () => {
       validateWeeksInput();
       const weeks = parseInt(elements.weeksInput.value) || 0;
       const penType = elements.penTypeSelect.value;
@@ -523,15 +539,15 @@
       updateAll();
     });
 
-    elements.penTypeSelect.addEventListener('change', () => {
+    elements.penTypeSelect.addEventListener("change", () => {
       setDefaultValues();
     });
 
-    elements.resetButton.addEventListener('click', () => {
+    elements.resetButton.addEventListener("click", () => {
       setDefaultValues();
-      elements.clicksError.style.display = 'none';
-      elements.doseError.style.display = 'none';
-      elements.weeksError.style.display = 'none';
+      elements.clicksError.style.display = "none";
+      elements.doseError.style.display = "none";
+      elements.weeksError.style.display = "none";
     });
 
     // -----------------------------
