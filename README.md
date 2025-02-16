@@ -1,9 +1,9 @@
 # mounjaro_calc
-DE: Webtool für Kwikpen-Dosierung, Wochen &amp; Preise. Bidirektionale Berechnungen (Klicks↔Dosis) via linearer Interpolation, inkl. Lookup-Matrix &amp; Zusammenfassung. EN: Web tool for Kwikpen dosage, weeks &amp; pricing. Bidirectional calculations (clicks↔dosage) with linear interpolation, including lookup matrix &amp; summary.
+DE: Webtool für Mounjaro Kwikpen-Dosierung, Wochen &amp; Preise. Bidirektionale Berechnungen (Klicks↔Dosis) via linearer Interpolation, inkl. Lookup-Matrix &amp; Zusammenfassung. EN: Web tool for Kwikpen dosage, weeks &amp; pricing. Bidirectional calculations (clicks↔dosage) with linear interpolation, including lookup matrix &amp; summary.
 
-# Kwikpen Kalkulator
+# Mounjaro Kwikpen Kalkulator
 
-Dieses Projekt ist ein webbasiertes Tool zur Berechnung von Dosierung, Wochenanzahl und Preisinformationen für verschiedene Kwikpen-Modelle. Es wurde mit HTML, CSS und JavaScript umgesetzt und nutzt Lookup-Tabellen sowie lineare Interpolation, um bidirektionale Berechnungen durchzuführen. Das bedeutet, dass der Nutzer entweder die Anzahl der Klicks oder die gewünschte Dosis eingeben kann – in beiden Fällen werden die jeweils zugehörigen Werte (Dosis, Klicks, Wochen und Preise) automatisch aktualisiert.
+Dieses Projekt ist ein webbasiertes Tool zur Berechnung von Dosierung, Wochenanzahl und Preisinformationen für verschiedene Mounjaro Kwikpen-Dosierungen. Es wurde mit HTML, CSS und JavaScript umgesetzt und nutzt Lookup-Tabellen sowie lineare Interpolation, um bidirektionale Berechnungen durchzuführen. Das bedeutet, dass der Nutzer entweder die Anzahl der Klicks oder die gewünschte Dosis eingeben kann – in beiden Fällen werden die jeweils zugehörigen Werte (Dosis, Klicks, Wochen und Preise) automatisch aktualisiert.
 
 ## Funktionsweise und Architektur
 
