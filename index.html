@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mounjaro Kwikpen Kalkulator</title>
+  <title>Kwikpen Kalkulator</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -93,7 +93,7 @@
     </select>
   </div>
 
-  <h1 id="main-title">Mounjaro Kwikpen Kalkulator</h1>
+  <h1 id="main-title">Kwikpen Kalkulator</h1>
   <div class="container">
     <div class="input-section">
       <div class="input-group">
@@ -139,6 +139,14 @@
         <label id="label-mg-price"></label>
         <div id="mg-price"></div>
       </div>
+      <!-- Custom Price Toggle & Input -->
+      <div class="price-item">
+        <input type="checkbox" id="custom-price-checkbox">
+        <label id="custom-price-label" for="custom-price-checkbox"></label>
+      </div>
+      <div class="price-item" id="custom-price-input-container" style="display: none;">
+        <input type="number" id="custom-price-input" step="0.01" placeholder="">
+      </div>
       <div class="price-item" id="price-info-disclaimer"></div>
       
       <!-- Buy Me a Coffee Button -->
@@ -180,7 +188,7 @@
     // -----------------------------
     const i18n = {
       de: {
-        mainTitle: "Mounjaro Kwikpen Kalkulator",
+        mainTitle: "Kwikpen Kalkulator",
         labelPenType: "Pen Auswahl:",
         labelClicks: "Anzahl Klicks:",
         labelDose: "Dosis (mg):",
@@ -193,6 +201,7 @@
         labelPenPrice: "Pen Preis:",
         labelDosePrice: "Preis pro Dosis:",
         labelMgPrice: "Preis pro mg:",
+        customPriceLabel: "Eigene Preiseingabe aktivieren",
         priceInfoDisclaimer: "Achtung: Der Rechner hat keinen Anspruch auf Vollständigkeit und stellt keine medizinische Beratung dar. Die Nutzung erfolgt auf eigene Verantwortung. Maßgeblich ist stets die Packungsbeilage bzw. die verschriebene Dosierung.",
         summaryTitle: "Zusammenfassung",
         lookupTableTitle: "Lookup-Matrix",
@@ -207,7 +216,7 @@
           "In der letzten Woche könnten ggf. 60 Klicks benötigt werden, um den Pen vollständig zu entleeren."
       },
       en: {
-        mainTitle: "Mounjaro Kwikpen Calculator",
+        mainTitle: "Kwikpen Calculator",
         labelPenType: "Select Pen:",
         labelClicks: "Number of clicks:",
         labelDose: "Dose (mg):",
@@ -220,6 +229,7 @@
         labelPenPrice: "Pen Price:",
         labelDosePrice: "Price per Dose:",
         labelMgPrice: "Price per mg:",
+        customPriceLabel: "Enable custom price input",
         priceInfoDisclaimer: "Warning: This calculator is not comprehensive and does not constitute medical advice. Use at your own risk. The package insert and prescribed dosage are always binding.",
         summaryTitle: "Summary",
         lookupTableTitle: "Lookup Matrix",
@@ -236,7 +246,7 @@
     };
 
     // -----------------------------
-    // Globale Variablen & Daten
+    // Globale Konstanten & Daten
     // -----------------------------
     let currentLang = "de"; // Standard: Deutsch
     const CLICKS_MAX = 60;
@@ -250,7 +260,7 @@
       '12.5': 489.23,
       '15': 489.23
     };
-    // Referenz-Lookup-Werte (für 0, 30, 60 Klicks; die Matrix wird dynamisch von 1 bis 60 erstellt)
+    // Lookup-Daten: Für 0, 30, 60 Klicks; die Matrix wird dynamisch von 1 bis 60 erstellt.
     const LOOKUP_TABLES = {
       '2.5':  { clicks: [0, 30, 60], doses: [0, 1.25, 2.5] },
       '5':    { clicks: [0, 30, 60], doses: [0, 2.5, 5] },
@@ -285,6 +295,9 @@
       dosePrice: document.getElementById('dose-price'),
       mgPrice: document.getElementById('mg-price'),
       priceInfoDisclaimer: document.getElementById('price-info-disclaimer'),
+      customPriceCheckbox: document.getElementById('custom-price-checkbox'),
+      customPriceInput: document.getElementById('custom-price-input'),
+      customPriceInputContainer: document.getElementById('custom-price-input-container'),
       summaryTitle: document.getElementById('summary-title'),
       summaryText: document.getElementById('summary-text'),
       warningText: document.getElementById('warning-text'),
@@ -292,7 +305,8 @@
       lookupThClicks: document.getElementById('lookup-th-clicks'),
       lookupThDose: document.getElementById('lookup-th-dose'),
       lookupTableBody: document.querySelector('#lookup-table tbody'),
-      penTypeSelect: document.getElementById('pen-type')
+      penTypeSelect: document.getElementById('pen-type'),
+      customPriceLabel: document.getElementById('custom-price-label')
     };
 
     // -----------------------------
@@ -302,7 +316,7 @@
       currentLang = lang;
       const t = i18n[lang];
 
-      // Labels & Texte aktualisieren
+      // Aktualisiere alle Texte
       elements.mainTitle.textContent             = t.mainTitle;
       elements.penTypeLabel.textContent          = t.labelPenType;
       elements.clicksLabel.textContent           = t.labelClicks;
@@ -317,12 +331,12 @@
       elements.dosePriceLabel.textContent        = t.labelDosePrice;
       elements.mgPriceLabel.textContent          = t.labelMgPrice;
       elements.priceInfoDisclaimer.textContent   = t.priceInfoDisclaimer;
+      elements.customPriceLabel.textContent      = t.customPriceLabel;
       elements.summaryTitle.textContent          = t.summaryTitle;
       elements.lookupTableTitle.textContent      = t.lookupTableTitle;
       elements.lookupThClicks.textContent        = t.lookupThClicks;
       elements.lookupThDose.textContent          = t.lookupThDose;
 
-      // Alle Daten aktualisieren
       updateAll();
     }
 
@@ -346,42 +360,30 @@
     function calculateDoseFromClicks(clicks, penType) {
       const table = LOOKUP_TABLES[penType];
       if (clicks > CLICKS_MAX) {
-        elements.clicksError.style.display = 'block';
+        elements.clicksError.style.display = "block";
         return table.doses[table.doses.length - 1];
       }
-      elements.clicksError.style.display = 'none';
+      elements.clicksError.style.display = "none";
       
-      const interval = findInterval(clicks, table.clicks);
-      if (interval === -1) return 0;
+      const idx = findInterval(clicks, table.clicks);
+      if (idx === -1) return 0;
       
-      return interpolate(
-        clicks,
-        table.clicks[interval],
-        table.clicks[interval + 1],
-        table.doses[interval],
-        table.doses[interval + 1]
-      );
+      return interpolate(clicks, table.clicks[idx], table.clicks[idx + 1], table.doses[idx], table.doses[idx + 1]);
     }
 
     // Dosis → Klicks
     function calculateClicksFromDose(dose, penType) {
       const table = LOOKUP_TABLES[penType];
       if (dose > table.doses[table.doses.length - 1]) {
-        elements.doseError.style.display = 'block';
+        elements.doseError.style.display = "block";
         return CLICKS_MAX;
       }
-      elements.doseError.style.display = 'none';
+      elements.doseError.style.display = "none";
       
-      const interval = findInterval(dose, table.doses);
-      if (interval === -1) return 0;
+      const idx = findInterval(dose, table.doses);
+      if (idx === -1) return 0;
       
-      return Math.floor(interpolate(
-        dose,
-        table.doses[interval],
-        table.doses[interval + 1],
-        table.clicks[interval],
-        table.clicks[interval + 1]
-      ));
+      return Math.floor(interpolate(dose, table.doses[idx], table.doses[idx + 1], table.clicks[idx], table.clicks[idx + 1]));
     }
 
     // Klicks → Wochen
@@ -397,19 +399,22 @@
     // -----------------------------
     // Update-Funktionen
     // -----------------------------
-    // NEUE Logik: Preis pro mg basiert auf der *aktuellen* Dosis
+    function effectivePenPrice() {
+      if (customPriceActive && customPrice > 0) {
+        return customPrice;
+      } else {
+        return PRICES[elements.penTypeSelect.value] || 0;
+      }
+    }
+
     function updatePriceInfo(penType, clicks, dose) {
-      const penPriceVal = PRICES[penType];
+      const penPriceVal = effectivePenPrice();
       const dosesPerPen = (clicks > 0) ? Math.floor(DOSES_PER_PEN / clicks) : 0;
-
-      // Pen-Preis
+      
       elements.penPrice.textContent = `${penPriceVal.toFixed(2)} €`;
-
       if (dosesPerPen > 0) {
         const pricePerDose = penPriceVal / dosesPerPen;
         elements.dosePrice.textContent = `${pricePerDose.toFixed(2)} €`;
-
-        // Preis pro mg nur, wenn die aktuelle Dosis > 0 ist
         if (dose > 0) {
           const pricePerMg = pricePerDose / dose;
           elements.mgPrice.textContent = `${pricePerMg.toFixed(2)} €`;
@@ -427,11 +432,10 @@
       const penType = elements.penTypeSelect.value;
       const clicks = parseInt(elements.clicksInput.value) || 0;
       const dose = parseFloat(elements.doseInput.value) || 0;
-      const penPriceVal = PRICES[penType];
+      const penPriceVal = effectivePenPrice();
       const dosesPerPen = (clicks > 0) ? Math.floor(DOSES_PER_PEN / clicks) : 0;
       const pricePerDose = (dosesPerPen > 0) ? (penPriceVal / dosesPerPen).toFixed(2) : "-";
 
-      // Zusammenfassungs-Text
       if (penType && clicks > 0 && dose > 0 && dosesPerPen > 0) {
         elements.summaryText.textContent = t.summaryText(
           penType,
@@ -444,19 +448,13 @@
         elements.summaryText.textContent = "";
       }
 
-      // Warnung bei nicht-exakter Teilung
       if (clicks > 0) {
         const exactWeeks = DOSES_PER_PEN / clicks;
-        if (exactWeeks !== Math.floor(exactWeeks)) {
-          elements.warningText.textContent = t.warningNonExact;
-        } else {
-          elements.warningText.textContent = "";
-        }
+        elements.warningText.textContent = (exactWeeks !== Math.floor(exactWeeks)) ? t.warningNonExact : "";
       } else {
         elements.warningText.textContent = "";
       }
 
-      // Lookup-Matrix von 1 bis 60
       let rows = "";
       for (let i = 1; i <= 60; i++) {
         const d = calculateDoseFromClicks(i, penType);
@@ -465,13 +463,10 @@
       elements.lookupTableBody.innerHTML = rows;
     }
 
-    // Aktualisiert alle Informationen (Preise, Zusammenfassung etc.)
     function updateAll() {
       const penType = elements.penTypeSelect.value;
       const clicks = parseInt(elements.clicksInput.value) || 0;
       const dose = parseFloat(elements.doseInput.value) || 0;
-
-      // Neu: Wir übergeben die aktuelle Dosis an updatePriceInfo
       updatePriceInfo(penType, clicks, dose);
       updateSummary();
     }
@@ -487,16 +482,26 @@
       }
     }
 
-    function setDefaultValues() {
+    function resetValues() {
+      elements.penTypeSelect.value = "10";
       elements.weeksInput.value = DEFAULT_WEEKS;
-      const penType = elements.penTypeSelect.value;
-      const clicks = calculateClicksFromWeeks(DEFAULT_WEEKS);
-      const dose = calculateDoseFromClicks(clicks, penType);
-      
-      elements.clicksInput.value = clicks;
-      elements.doseInput.value = dose.toFixed(2);
+      const newClicks = calculateClicksFromWeeks(DEFAULT_WEEKS);
+      const newDose = calculateDoseFromClicks(newClicks, elements.penTypeSelect.value);
+      elements.clicksInput.value = newClicks;
+      elements.doseInput.value = newDose.toFixed(2);
+      customPriceActive = false;
+      elements.customPriceCheckbox.checked = false;
+      customPrice = 0.0;
+      elements.customPriceInput.value = "";
+      elements.customPriceInputContainer.style.display = "none";
       updateAll();
     }
+
+    // -----------------------------
+    // Custom Price Management
+    // -----------------------------
+    let customPriceActive = false;
+    let customPrice = 0.0;
 
     // -----------------------------
     // Event-Listener
@@ -506,55 +511,63 @@
     });
 
     elements.clicksInput.addEventListener("input", () => {
-      const clicks = parseInt(elements.clicksInput.value) || 0;
-      const penType = elements.penTypeSelect.value;
-      const dose = calculateDoseFromClicks(clicks, penType);
-      const weeks = calculateWeeksFromClicks(clicks);
-      
-      elements.doseInput.value = dose.toFixed(2);
-      elements.weeksInput.value = weeks;
+      const c = parseInt(elements.clicksInput.value) || 0;
+      // Wenn Klicks geändert werden, aktualisiere Dosis & Wochen
+      const newDose = calculateDoseFromClicks(c, elements.penTypeSelect.value);
+      const newWeeks = calculateWeeksFromClicks(c);
+      elements.doseInput.value = newDose.toFixed(2);
+      elements.weeksInput.value = newWeeks;
       updateAll();
     });
 
     elements.doseInput.addEventListener("input", () => {
-      const dose = parseFloat(elements.doseInput.value) || 0;
-      const penType = elements.penTypeSelect.value;
-      const clicks = calculateClicksFromDose(dose, penType);
-      const weeks = calculateWeeksFromClicks(clicks);
-      
-      elements.clicksInput.value = clicks;
-      elements.weeksInput.value = weeks;
+      const d = parseFloat(elements.doseInput.value) || 0;
+      const newClicks = calculateClicksFromDose(d, elements.penTypeSelect.value);
+      const newWeeks = calculateWeeksFromClicks(newClicks);
+      elements.clicksInput.value = newClicks;
+      elements.weeksInput.value = newWeeks;
       updateAll();
     });
 
     elements.weeksInput.addEventListener("input", () => {
       validateWeeksInput();
-      const weeks = parseInt(elements.weeksInput.value) || 0;
-      const penType = elements.penTypeSelect.value;
-      const clicks = calculateClicksFromWeeks(weeks);
-      const dose = calculateDoseFromClicks(clicks, penType);
-      
-      elements.clicksInput.value = clicks;
-      elements.doseInput.value = dose.toFixed(2);
+      const w = parseInt(elements.weeksInput.value) || 0;
+      const newClicks = calculateClicksFromWeeks(w);
+      const newDose = calculateDoseFromClicks(newClicks, elements.penTypeSelect.value);
+      elements.clicksInput.value = newClicks;
+      elements.doseInput.value = newDose.toFixed(2);
       updateAll();
     });
 
     elements.penTypeSelect.addEventListener("change", () => {
-      setDefaultValues();
+      resetValues();
     });
 
     elements.resetButton.addEventListener("click", () => {
-      setDefaultValues();
+      resetValues();
       elements.clicksError.style.display = "none";
       elements.doseError.style.display = "none";
       elements.weeksError.style.display = "none";
+    });
+
+    // Custom Price Checkbox
+    elements.customPriceCheckbox.addEventListener("change", (e) => {
+      customPriceActive = e.target.checked;
+      elements.customPriceInputContainer.style.display = customPriceActive ? "block" : "none";
+      updateAll();
+    });
+
+    elements.customPriceInput.addEventListener("input", () => {
+      customPrice = parseFloat(elements.customPriceInput.value) || 0;
+      updateAll();
     });
 
     // -----------------------------
     // Start
     // -----------------------------
     setLanguage(currentLang);
-    setDefaultValues();
+    resetValues();
+    updateAll();
   </script>
 </body>
 </html>
