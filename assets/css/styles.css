@@ -1,0 +1,2076 @@
+/*!
+ * Mounjaro KwikPen Rechner – Stylesheet
+ * https://github.com/monkeydriven/mounjaro_calc
+ *
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 monkeydriven – vollständiger Lizenztext: siehe LICENSE.
+ */
+
+/* ============================================================================
+   Inhalt
+   ----------------------------------------------------------------------------
+    1. Design-Tokens (Farben, Abstände, Radien) – hell & dunkel
+    2. Basis & Reset
+    3. Layout-Helfer
+    4. Kopfbereich & Navigation
+    5. Einleitung (Hero)
+    6. Karten & Schritte
+    7. Schritt 1 – Pen-Auswahl
+    8. Schritt 2 – Eingabeart, Stepper, Schieberegler, Meldungen
+    9. Schritt 3 – Preis, Schalter, erweiterte Annahmen
+   10. Ergebnis – Kopfzahl, Ring, Kennzahlen, Pen-Balken
+   11. Hinweise & Buttons
+   12. Dosis-Tabelle
+   13. So funktioniert's
+   14. Fußzeile
+   15. Mobile Kurzanzeige & Toast
+   16. Barrierefreiheit: reduzierte Bewegung, erzwungene Farben
+   17. Druckansicht
+
+   Gestaltungsprinzipien
+   • Alle Farben laufen über Variablen (Tokens). Komponenten verwenden nur
+     Rollen wie --text oder --accent, nie feste Farbwerte – so wechseln
+     helles und dunkles Schema an genau einer Stelle.
+   • Kontraste: Fließtext ≥ 4,5 : 1, große Zahlen und UI-Ränder ≥ 3 : 1.
+   • Mobile first: Basis-Styles für schmale Bildschirme, ab 960 px
+     zweispaltiges Layout mit mitlaufendem Ergebnis.
+   • Systemschriften statt Web-Fonts: schnell, offline-fähig, ohne Lizenz-
+     oder Datenschutzfragen.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. Design-Tokens
+   ========================================================================== */
+:root {
+  color-scheme: light;
+
+  /* Flächen */
+  --bg: #f3f6f5;
+  --surface: #ffffff;
+  --surface-2: #f1f5f4;
+  --surface-3: #e5ecea;
+
+  /* Text */
+  --text: #0e1716;
+  --text-2: #3f4d4b;
+  --muted: #5b6967;
+
+  /* Linien */
+  --border: #dbe3e1;
+  --border-strong: #86948f; /* ≥ 3 : 1 auf Weiß (WCAG 1.4.11) */
+
+  /* Akzent (Petrol) – eine Farbfamilie für Interaktion und Daten */
+  --accent: #0f766e;
+  --accent-hover: #0b5f58;
+  --accent-soft: #e2f3f0;
+  --accent-track: #c3e5df;   /* hellere Stufe derselben Farbe: Ring-/Regler-Spur */
+  --accent-alt: #3a9d91;     /* zweiter Farbton für abwechselnde Segmente */
+  --on-accent: #ffffff;
+
+  /* Tabellen-Hervorhebung */
+  --hl-line: #eef7f5;
+
+  /* Status (nie allein durch Farbe – immer mit Icon und Text) */
+  --info-bg: #eaf2fb;
+  --info-border: #b9d3ee;
+  --info-text: #1b4a73;
+  --warn-bg: #fff6e5;
+  --warn-border: #f0cd85;
+  --warn-text: #6b4300;
+  --danger: #b42318;
+  --danger-bg: #fdeceb;
+
+  /* Fokus-Ring */
+  --focus: #0f766e;
+
+  /* Form */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow: 0 1px 2px rgba(14, 23, 22, 0.05), 0 6px 24px rgba(14, 23, 22, 0.06);
+  --shadow-lift: 0 2px 6px rgba(14, 23, 22, 0.08), 0 12px 32px rgba(14, 23, 22, 0.12);
+
+  /* Typografie */
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* Layout – --header-h wird per JavaScript mit der echten Höhe überschrieben */
+  --container: 1160px;
+  --gutter: 16px;
+  --header-h: 96px;
+  --mini-h: 0px;
+}
+
+/* Dunkles Schema: folgt dem System, außer der Nutzer hat "hell" gewählt … */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0b1110;
+    --surface: #131b1a;
+    --surface-2: #1a2423;
+    --surface-3: #243130;
+    --text: #e8f0ee;
+    --text-2: #b6c4c1;
+    --muted: #93a3a0;
+    --border: #2a3836;
+    --border-strong: #62756f;
+    --accent: #2ec4b2;
+    --accent-hover: #5fd8c9;
+    --accent-soft: #10302c;
+    --accent-track: #1d4a44;
+    --accent-alt: #1b8f82;
+    --on-accent: #04211e;
+    --hl-line: #172624;
+    --info-bg: #0f2333;
+    --info-border: #24496b;
+    --info-text: #a9d0f2;
+    --warn-bg: #2a200e;
+    --warn-border: #6e5320;
+    --warn-text: #f3d08e;
+    --danger: #ff8f84;
+    --danger-bg: #3a1714;
+    --focus: #5fd8c9;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 24px rgba(0, 0, 0, 0.25);
+    --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* … oder der Nutzer hat ausdrücklich "dunkel" gewählt (gleiche Werte). */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b1110;
+  --surface: #131b1a;
+  --surface-2: #1a2423;
+  --surface-3: #243130;
+  --text: #e8f0ee;
+  --text-2: #b6c4c1;
+  --muted: #93a3a0;
+  --border: #2a3836;
+  --border-strong: #62756f;
+  --accent: #2ec4b2;
+  --accent-hover: #5fd8c9;
+  --accent-soft: #10302c;
+  --accent-track: #1d4a44;
+  --accent-alt: #1b8f82;
+  --on-accent: #04211e;
+  --hl-line: #172624;
+  --info-bg: #0f2333;
+  --info-border: #24496b;
+  --info-text: #a9d0f2;
+  --warn-bg: #2a200e;
+  --warn-border: #6e5320;
+  --warn-text: #f3d08e;
+  --danger: #ff8f84;
+  --danger-bg: #3a1714;
+  --focus: #5fd8c9;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 24px rgba(0, 0, 0, 0.25);
+  --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+
+/* ==========================================================================
+   2. Basis & Reset
+   ========================================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 1rem;
+  line-height: 1.55;
+  /* Platz für die mobile Kurzanzeige, damit sie nichts verdeckt */
+  padding-bottom: var(--mini-h);
+}
+
+h1, h2, h3, p, ol, ul, dl, dd, figure, fieldset {
+  margin: 0;
+}
+
+ul, ol {
+  padding: 0;
+  list-style: none;
+}
+
+fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+img, svg {
+  display: block;
+  max-width: 100%;
+}
+
+button, input, select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+/* Einheitlicher, gut sichtbarer Fokus – nur bei Tastaturbedienung */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* Abschnitte nicht unter dem fixierten Kopf verstecken */
+[id] {
+  scroll-margin-top: calc(var(--header-h) + 12px);
+}
+
+/* Fokus-Ziele der Sprunglinks zeigen keinen Rahmen um ganze Abschnitte */
+section[tabindex="-1"]:focus {
+  outline: none;
+}
+
+.sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Icons: Strich-Grafiken, erben die Textfarbe */
+.icon {
+  width: 1.25em;
+  height: 1.25em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Nur für Screenreader sichtbar */
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--gutter);
+  top: -100px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 12px;
+  color: var(--on-accent);
+}
+
+
+/* ==========================================================================
+   3. Layout-Helfer
+   ========================================================================== */
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+@media (min-width: 640px) {
+  :root { --gutter: 24px; }
+}
+
+.section {
+  padding-block: 40px;
+}
+
+.section + .section {
+  border-top: 1px solid var(--border);
+}
+
+.section-head {
+  max-width: 68ch;
+  margin-bottom: 24px;
+}
+
+.section-head h2 {
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 1.875rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.lead {
+  margin-top: 8px;
+  color: var(--text-2);
+  font-size: 1.0625rem;
+}
+
+.section-tip {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+
+/* ==========================================================================
+   4. Kopfbereich & Navigation
+   ========================================================================== */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border-bottom: 1px solid var(--border);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  backdrop-filter: saturate(1.4) blur(12px);
+}
+
+/* Fallback für Browser ohne color-mix() */
+@supports not (background: color-mix(in srgb, red 50%, transparent)) {
+  .app-header { background: var(--surface); }
+}
+
+.header-inner {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "brand actions"
+    "nav   nav";
+  align-items: center;
+  column-gap: 12px;
+}
+
+.brand {
+  grid-area: brand;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.brand:hover {
+  color: var(--text);
+}
+
+.brand-logo {
+  width: 30px;
+  height: 30px;
+}
+
+.brand {
+  min-width: 0;
+}
+
+/* Lange Namen (z. B. Englisch) werden notfalls mit "…" gekürzt statt
+   in die Sprachwahl zu laufen */
+.brand-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 359px) {
+  .brand-name { display: none; } /* sehr schmal: Logo genügt */
+}
+
+.header-actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Sprachumschalter */
+.lang-switch {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.lang-btn {
+  min-width: 40px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.lang-btn[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Runde Icon-Buttons (z. B. Farbschema) */
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.icon-btn:hover {
+  border-color: var(--border-strong);
+}
+
+/* Sonne im dunklen, Mond im hellen Schema zeigen (= Ziel des Klicks) */
+.icon-sun { display: none; }
+:root[data-theme="dark"] .icon-sun { display: block; }
+:root[data-theme="dark"] .icon-moon { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .icon-sun { display: block; }
+  :root:not([data-theme="light"]) .icon-moon { display: none; }
+}
+
+/* Abschnittsnavigation: mobil als Tab-Leiste */
+.section-nav {
+  grid-area: nav;
+  margin-inline: calc(var(--gutter) * -1);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.section-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.section-nav-list {
+  display: flex;
+  gap: 4px;
+  padding-inline: var(--gutter);
+  white-space: nowrap;
+}
+
+.nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--text-2);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.nav-link .icon {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+/* Schmale Displays: Icons weglassen, damit alle drei Tabs hineinpassen */
+@media (max-width: 479px) {
+  .section-nav-list { justify-content: space-between; }
+  .nav-link { padding: 0 8px; font-size: 0.875rem; }
+  .nav-link .icon { display: none; }
+}
+
+@media (max-width: 359px) {
+  .nav-link { padding: 0 6px; font-size: 0.8125rem; }
+}
+
+.nav-link:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+/* Aktiver Abschnitt: Unterstrich-Indikator + kräftigere Farbe */
+.nav-link[aria-current="true"] {
+  color: var(--accent);
+}
+
+.nav-link[aria-current="true"]::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--accent);
+}
+
+@media (min-width: 960px) {
+  .header-inner {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "brand nav actions";
+    column-gap: 24px;
+  }
+
+  .brand {
+    min-height: 64px;
+  }
+
+  .section-nav {
+    margin-inline: 0;
+  }
+
+  .section-nav-list {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .nav-link {
+    min-height: 40px;
+    border-radius: 999px;
+  }
+
+  .nav-link[aria-current="true"] {
+    background: var(--accent-soft);
+  }
+
+  .nav-link[aria-current="true"]::after {
+    display: none;
+  }
+}
+
+
+/* ==========================================================================
+   5. Einleitung (Hero)
+   ========================================================================== */
+.section-calc {
+  padding-top: 28px;
+}
+
+.hero {
+  max-width: 68ch;
+  margin-bottom: 24px;
+}
+
+.hero h1 {
+  font-size: clamp(1.75rem, 1.3rem + 2vw, 2.5rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.badges li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.badges .icon {
+  color: var(--accent);
+  width: 1.1em;
+  height: 1.1em;
+}
+
+
+/* ==========================================================================
+   6. Karten & Schritte
+   ========================================================================== */
+.calc-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+
+.calc-steps,
+.calc-aside {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-content: start;
+  min-width: 0;
+}
+
+@media (min-width: 960px) {
+  .calc-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+    align-items: start;
+    gap: 28px;
+  }
+
+}
+
+/* Ergebnis läuft beim Scrollen mit – aber nur, wenn es auch komplett auf
+   den Bildschirm passt (sonst wären die unteren Teile nicht erreichbar). */
+@media (min-width: 960px) and (min-height: 940px) {
+  .calc-aside {
+    position: sticky;
+    top: calc(var(--header-h) + 16px);
+  }
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.step,
+.result {
+  padding: 20px;
+}
+
+@media (min-width: 640px) {
+  .step,
+  .result {
+    padding: 24px;
+  }
+}
+
+.step-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+/* Nummerierter Kreis = roter Faden durch den Rechner */
+.step-num {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+
+.step-num-result .icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+}
+
+.step-title {
+  font-size: 1.1875rem;
+  line-height: 1.3;
+  padding-top: 3px;
+}
+
+.step-hint {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+
+/* ==========================================================================
+   7. Schritt 1 – Pen-Auswahl (Radio-Karten)
+   ========================================================================== */
+.pen-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pen-option {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+/* Echtes Radio bleibt für Tastatur & Screenreader erhalten, nur unsichtbar */
+.pen-option input,
+.segmented-option input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.pen-card {
+  display: grid;
+  gap: 2px;
+  height: 100%;
+  padding: 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+}
+
+.pen-option:hover .pen-card {
+  border-color: var(--border-strong);
+}
+
+.pen-option input:checked + .pen-card {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.pen-option input:focus-visible + .pen-card {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.pen-strength {
+  white-space: nowrap;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.pen-strength small {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.pen-price {
+  color: var(--text-2);
+  font-size: 0.875rem;
+}
+
+.pen-per-click {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* Kleine Stufenanzeige: wie "stark" ist der Pen im Vergleich (1 – 6) */
+.pen-level {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.pen-level span {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-3);
+}
+
+.pen-level span.is-on {
+  background: var(--accent);
+}
+
+/* Häkchen als Eck-Badge der gewählten Karte (überdeckt so nie den Text) */
+.pen-check {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  display: none;
+  width: 22px;
+  height: 22px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.pen-check .icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 3;
+}
+
+.pen-option input:checked ~ .pen-check {
+  display: block;
+}
+
+@media (max-width: 380px) {
+  .pen-grid { gap: 8px; }
+  .pen-card { padding: 10px; }
+  .pen-strength { font-size: 1.0625rem; }
+  .pen-strength small { font-size: 0.75rem; }
+  .pen-price { font-size: 0.8125rem; }
+  .pen-per-click { display: none; }
+}
+
+
+/* ==========================================================================
+   8. Schritt 2 – Eingabeart, Stepper, Schieberegler, Meldungen
+   ========================================================================== */
+
+/* Segment-Umschalter (Radio-Gruppe) */
+.segmented {
+  margin-bottom: 18px;
+}
+
+.segmented-legend {
+  margin-bottom: 8px;
+  color: var(--text-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.segmented-track {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.segmented-option {
+  position: relative;
+  display: block;
+}
+
+.segmented-option span {
+  display: grid;
+  place-items: center;
+  min-height: 40px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-weight: 600;
+  text-align: center;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.segmented-option:hover span {
+  color: var(--text);
+}
+
+.segmented-option input:checked + span {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--border);
+}
+
+.segmented-option input:focus-visible + span {
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+}
+
+/* Eingabefelder allgemein */
+.field + .field {
+  margin-top: 16px;
+}
+
+.field-label {
+  display: block;
+  font-weight: 650;
+}
+
+.field-desc,
+.field-hint {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.field-desc {
+  margin-top: 2px;
+}
+
+.field-hint {
+  margin-top: 4px;
+}
+
+/* Stepper: [−] [Wert + Einheit] [+] */
+.stepper {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 52px;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.stepper-btn {
+  display: grid;
+  place-items: center;
+  height: 56px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.stepper-btn:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+}
+
+.stepper-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.stepper-btn .icon {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2.5;
+}
+
+.stepper-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 56px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.stepper-input:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.stepper-input input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 4px 0 16px;
+  border: 0;
+  background: transparent;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.stepper-input input:focus {
+  outline: none;
+}
+
+.stepper-unit {
+  flex: none;
+  padding-right: 16px;
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+/* Ungültige Eingabe – Klasse wird per JavaScript am Rahmen gesetzt
+   (statt :has(), damit es auch in älteren Browsern funktioniert) */
+.stepper-input.is-invalid,
+.input-affix.is-invalid {
+  border-color: var(--danger);
+}
+
+input[aria-invalid="true"] {
+  caret-color: var(--danger);
+}
+
+/* Schieberegler – Füllstand kommt aus --fill (per JavaScript gesetzt) */
+.range {
+  --fill: 50%;
+  width: 100%;
+  height: 28px;
+  margin: 14px 0 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--accent) 0 var(--fill), var(--accent-track) var(--fill) 100%);
+}
+
+.range::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--accent-track);
+}
+
+.range::-moz-range-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -9px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.range:focus-visible {
+  outline: none;
+}
+
+.range:focus-visible::-webkit-slider-thumb {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.range:focus-visible::-moz-range-thumb {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.range-scale {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Schnellauswahl-Chips */
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.preset {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.preset small {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.preset:hover {
+  border-color: var(--border-strong);
+}
+
+.preset[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+/* Meldungen unter Feldern */
+.field-msg:empty {
+  display: none;
+}
+
+.field-msg {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.msg {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.msg .icon {
+  margin-top: 1px;
+  width: 1.15em;
+  height: 1.15em;
+}
+
+.msg-error {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.msg-info {
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+
+
+/* ==========================================================================
+   9. Schritt 3 – Preis, Schalter, erweiterte Annahmen
+   ========================================================================== */
+.price-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.price-row > div {
+  flex: 1 1 180px;
+}
+
+.price-row-label {
+  display: block;
+  font-weight: 600;
+}
+
+.price-row-note {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.price-row-value {
+  font-size: 1.25rem;
+  white-space: nowrap;
+}
+
+.price-row-value.is-overridden {
+  color: var(--muted);
+  text-decoration: line-through;
+  font-weight: 600;
+}
+
+/* Schalter (Checkbox mit role="switch") */
+.switch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.switch-track {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s;
+}
+
+.switch input:checked + .switch-track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.switch input:checked + .switch-track .switch-thumb {
+  transform: translateX(18px);
+}
+
+.switch input:focus-visible + .switch-track {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.switch-label {
+  font-weight: 600;
+}
+
+/* Einfaches Feld mit Einheit (€ / Klicks) */
+.input-affix {
+  display: flex;
+  align-items: center;
+  max-width: 260px;
+  height: 48px;
+  margin-top: 8px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.input-affix:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.input-affix input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 8px 0 14px;
+  border: 0;
+  background: transparent;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.input-affix input:focus {
+  outline: none;
+}
+
+.input-affix-unit {
+  padding-right: 14px;
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+/* Aufklappbereich */
+.advanced {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.advanced summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 48px;
+  color: var(--text-2);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.advanced summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced summary:hover {
+  color: var(--text);
+}
+
+.advanced-chevron {
+  transition: transform 0.2s;
+}
+
+.advanced[open] .advanced-chevron {
+  transform: rotate(180deg);
+}
+
+.advanced .field {
+  padding-bottom: 4px;
+}
+
+
+/* ==========================================================================
+   10. Ergebnis
+   ========================================================================== */
+.result {
+  border-top: 4px solid var(--accent);
+}
+
+.result-empty {
+  padding: 16px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.result-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* Kopfzahl – EINE große Zahl pro Ansicht */
+.result-dose {
+  font-size: clamp(2.75rem, 2rem + 3vw, 3.5rem);
+  font-weight: 750;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.result-dose-unit {
+  font-size: 0.45em;
+  font-weight: 650;
+  letter-spacing: 0;
+  color: var(--text-2);
+}
+
+.result-dose-caption {
+  margin-top: 4px;
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.result-sub {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* Ring-Anzeige: Anteil an der vollen Dosis (Spur = hellere Akzentstufe) */
+.meter-ring {
+  position: relative;
+  flex: none;
+  width: 112px;
+  height: 112px;
+}
+
+.meter-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.meter-ring circle {
+  fill: none;
+  stroke-width: 10;
+}
+
+.meter-ring-track {
+  stroke: var(--accent-track);
+}
+
+.meter-ring-fill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.35s ease;
+}
+
+.meter-ring-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+
+.meter-ring-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.meter-ring-caption {
+  max-width: 72px;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+
+/* Kennzahlen-Kacheln */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.kpi {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.kpi dt {
+  color: var(--text-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.kpi dd {
+  margin-top: 2px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.kpi dd.kpi-note {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+@media (max-width: 400px) {
+  .kpi { padding: 10px 12px; }
+  .kpi dd { font-size: 1.125rem; }
+  .meter-ring { width: 92px; height: 92px; }
+  .meter-ring-value { font-size: 1.0625rem; }
+}
+
+.kpi dd.is-muted {
+  color: var(--muted);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+/* Pen-Balken: Gesamtklicks, aufgeteilt in Wochen-Segmente */
+.pen-bar {
+  margin-top: 20px;
+}
+
+.pen-bar-title {
+  margin-bottom: 8px;
+  color: var(--text-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.pen-bar-canvas {
+  height: 28px;
+}
+
+.pen-bar-canvas svg {
+  width: 100%;
+  height: 28px;
+  overflow: visible;
+}
+
+.pen-seg {
+  fill: var(--accent);
+}
+
+.pen-seg.is-alt {
+  fill: var(--accent-alt);
+}
+
+.pen-rest {
+  fill: url(#rest-hatch);
+}
+
+.pen-rest-bg {
+  fill: var(--surface-3);
+}
+
+.pen-rest-line {
+  stroke: var(--border-strong);
+  stroke-width: 2;
+}
+
+.pen-seg:hover,
+.pen-rest:hover {
+  opacity: 0.8;
+}
+
+.pen-bar-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 8px;
+  color: var(--text-2);
+  font-size: 0.8125rem;
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.legend-swatch-dose {
+  background: linear-gradient(90deg, var(--accent) 0 50%, var(--accent-alt) 50% 100%);
+}
+
+.legend-swatch-rest {
+  background: repeating-linear-gradient(45deg, var(--surface-3) 0 2px, var(--border-strong) 2px 3.5px);
+}
+
+.summary {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.summary-title {
+  font-size: 0.9375rem;
+}
+
+.summary-text {
+  margin-top: 4px;
+  color: var(--text-2);
+  font-size: 0.9375rem;
+}
+
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.result-actions .btn {
+  flex: 1 1 140px;
+}
+
+
+/* ==========================================================================
+   11. Hinweise & Buttons
+   ========================================================================== */
+.notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius);
+  background: var(--info-bg);
+  color: var(--info-text);
+  font-size: 0.875rem;
+}
+
+.notice .icon {
+  margin-top: 1px;
+}
+
+.notice-success {
+  border-color: var(--accent-track);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.notice-success .icon {
+  color: var(--accent);
+}
+
+.notice-warning {
+  border-color: var(--warn-border);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+.notice-error {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+  color: var(--danger);
+  margin: 0 0 20px;
+}
+
+.disclaimer {
+  margin-top: 20px;
+  line-height: 1.5;
+}
+
+.disclaimer p {
+  max-width: 110ch;
+}
+
+.disclaimer-title {
+  margin-bottom: 4px;
+  font-size: 0.9375rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-weight: 650;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  color: var(--on-accent);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.btn-ghost:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.btn-small {
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: 0.875rem;
+}
+
+
+/* ==========================================================================
+   12. Dosis-Tabelle
+   ========================================================================== */
+.table-card {
+  overflow: hidden;
+}
+
+.table-scroll {
+  position: relative;
+  max-height: min(70vh, 34rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.dose-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dose-table th,
+.dose-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Fixierter Kopf und fixierte erste Spalte beim Scrollen */
+.dose-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-weight: 700;
+}
+
+.dose-table tbody th {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.dose-table thead th:first-child {
+  left: 0;
+  z-index: 3;
+}
+
+.dose-table th:first-child {
+  text-align: left;
+  border-right: 1px solid var(--border);
+}
+
+.dose-table td {
+  cursor: pointer;
+}
+
+.dose-table tbody tr:hover td,
+.dose-table tbody tr:hover th {
+  background: var(--surface-2);
+}
+
+/* Hervorhebung: Spalte des Pens, Zeile der Klickzahl, Schnittpunkt */
+.dose-table .is-col {
+  background: var(--hl-line);
+}
+
+.dose-table thead th.is-col {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.dose-table tr.is-row td,
+.dose-table tr.is-row th {
+  background: var(--hl-line);
+}
+
+.dose-table tr.is-row th {
+  color: var(--text);
+}
+
+/* Höhere Spezifität als .is-row/.is-col, damit der Schnittpunkt immer gewinnt */
+.dose-table tbody tr td.is-current,
+.dose-table tbody tr:hover td.is-current {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+
+/* Viertel-, halbe, Dreiviertel- und volle Dosis optisch gliedern */
+.dose-table tr.is-mark td,
+.dose-table tr.is-mark th {
+  border-bottom-color: var(--border-strong);
+}
+
+
+/* ==========================================================================
+   13. So funktioniert's
+   ========================================================================== */
+.how-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.how-card {
+  padding: 20px;
+}
+
+.how-num {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.how-card h3 {
+  font-size: 1.0625rem;
+  line-height: 1.3;
+}
+
+.how-card p {
+  margin-top: 6px;
+  color: var(--text-2);
+  font-size: 0.9375rem;
+}
+
+.formula {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px !important;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.formula-label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.formula code {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+
+/* ==========================================================================
+   14. Fußzeile
+   ========================================================================== */
+.app-footer {
+  padding-block: 32px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 0.875rem;
+}
+
+.footer-grid {
+  display: grid;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 760px) {
+  .footer-grid {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+.footer-meta {
+  display: grid;
+  gap: 8px;
+}
+
+.footer-small {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.btn-support {
+  background: #ff5f5f;
+  color: #1a0505;
+  border-color: #ff5f5f;
+}
+
+.btn-support:hover {
+  background: #ff7a7a;
+  color: #1a0505;
+}
+
+
+/* ==========================================================================
+   15. Mobile Kurzanzeige & Toast
+   ========================================================================== */
+.mini-result {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  padding-block: 10px calc(10px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.08);
+}
+
+.mini-result-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mini-result-text {
+  min-width: 0;
+  font-size: 0.9375rem;
+  line-height: 1.3;
+}
+
+.mini-result-text strong {
+  font-size: 1.125rem;
+}
+
+.mini-result-text span {
+  color: var(--text-2);
+}
+
+/* Auf großen Bildschirmen ist das Ergebnis ohnehin sichtbar */
+@media (min-width: 960px) {
+  .mini-result { display: none !important; }
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(20px + var(--mini-h));
+  z-index: 60;
+  max-width: calc(100vw - 32px);
+  padding: 12px 18px;
+  border-radius: var(--radius);
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-lift);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 12px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+
+/* ==========================================================================
+   16. Barrierefreiheit
+   ========================================================================== */
+
+/* Weniger Bewegung, wenn im System so eingestellt */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* Windows-Kontrastmodus: Zustände über Rahmen statt Hintergrundfarben */
+@media (forced-colors: active) {
+  .pen-option input:checked + .pen-card,
+  .segmented-option input:checked + span,
+  .preset[aria-pressed="true"],
+  .lang-btn[aria-pressed="true"] {
+    outline: 3px solid Highlight;
+  }
+
+  .dose-table td.is-current {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+
+  .nav-link[aria-current="true"] {
+    text-decoration: underline;
+  }
+
+  .switch-track,
+  .range {
+    forced-color-adjust: auto;
+  }
+}
+
+
+/* ==========================================================================
+   17. Druckansicht – Ergebnis und Tabelle, ohne Bedienelemente
+   ========================================================================== */
+@media print {
+  .app-header,
+  .skip-link,
+  .badges,
+  .stepper-btn,
+  .range,
+  .range-scale,
+  .presets,
+  .switch,
+  .advanced,
+  .result-actions,
+  .mini-result,
+  .toast,
+  .btn-support,
+  #methodik {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff;
+    color: #000000;
+    padding: 0;
+  }
+
+  .card {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .calc-aside {
+    position: static;
+  }
+
+  .table-scroll {
+    max-height: none;
+    overflow: visible;
+  }
+}

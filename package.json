@@ -1,0 +1,19 @@
+{
+  "name": "mounjaro-calc",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Mounjaro KwikPen Rechner – Klicks, Dosis, Wochen & Kosten (statische Web-App ohne Abhängigkeiten)",
+  "license": "MIT",
+  "author": "monkeydriven",
+  "homepage": "https://github.com/monkeydriven/mounjaro_calc",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/monkeydriven/mounjaro_calc.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}

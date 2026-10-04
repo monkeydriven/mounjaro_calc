@@ -1,599 +1,463 @@
 <!DOCTYPE html>
+<!--
+  Mounjaro KwikPen Rechner
+  https://github.com/monkeydriven/mounjaro_calc
+
+  SPDX-License-Identifier: MIT
+  Copyright (c) 2025 monkeydriven – vollständiger Lizenztext: siehe LICENSE.
+
+  Aufbau der Seite (von oben nach unten):
+    1. Kopfbereich  – Marke, Sprache, Farbschema + Abschnittsnavigation
+    2. #rechner     – Einleitung, drei nummerierte Schritte, Ergebnis
+    3. #tabelle     – Dosis-Matrix für alle Pen-Stärken
+    4. #methodik    – Rechenwege & Hinweis
+    5. Fußzeile     – Lizenz, Quellcode, Marken- & Datenschutzhinweis
+
+  Alle Texte kommen aus assets/js/i18n.js (Attribut data-i18n). Die
+  deutschen Texte stehen zusätzlich direkt im HTML, damit Suchmaschinen und
+  Nutzer ohne JavaScript sinnvolle Inhalte sehen.
+
+  Bewusst ohne externe Abhängigkeiten (keine CDNs, Web-Fonts oder
+  Tracking-Skripte): schneller, datenschutzfreundlich und lizenzrechtlich
+  unkompliziert. Alle Icons sind selbst gezeichnet und Teil dieses Projekts.
+-->
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mounjaro Kwikpen Kalkulator</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    h1, h2, h3 {
-      text-align: center;
-    }
-    #lang-switch {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .container {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 40px;
-    }
-    .input-section, .price-info {
-      position: relative;
-    }
-    .input-group {
-      margin-bottom: 20px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-    select, input, button {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 5px;
-    }
-    .error {
-      color: red;
-      font-size: 0.9em;
-      margin-top: 5px;
-      display: none;
-    }
-    .price-info {
-      background-color: #f5f5f5;
-      padding: 20px;
-      border-radius: 5px;
-    }
-    .price-item {
-      margin-bottom: 15px;
-    }
-    .reset-button {
-      background-color: #ff4444;
-      color: white;
-      border: none;
-      padding: 10px;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-    .reset-button:hover {
-      background-color: #cc0000;
-    }
-    /* Zusammenfassungsbereich */
-    #summary-section {
-      margin-top: 40px;
-    }
-    #lookup-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    #lookup-table th, #lookup-table td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
-    }
-    #warning-text {
-      color: red;
-      font-weight: bold;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Sicherheitsrichtlinie: nur eigene Dateien laden, keine Inline-Skripte. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Mounjaro KwikPen Rechner – Klicks, Dosis, Wochen &amp; Kosten</title>
+  <meta name="description" content="Kostenloser Rechner für den Mounjaro KwikPen: Klicks in mg umrechnen, Reichweite in Wochen und Kosten pro Woche bzw. mg ermitteln.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#0f766e" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b1110" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+
+  <!-- Setzt gespeichertes Farbschema VOR dem ersten Rendern (kein Aufblitzen). -->
+  <script src="assets/js/theme-init.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css">
+
+  <!-- Reihenfolge wichtig: Rechenkern → Texte → Oberfläche. "defer" lädt
+       parallel und führt erst nach dem Parsen des HTML aus. -->
+  <script src="assets/js/calc.js" defer></script>
+  <script src="assets/js/i18n.js" defer></script>
+  <script src="assets/js/app.js" defer></script>
 </head>
-<body>
-  <!-- Sprach-Auswahl -->
-  <div id="lang-switch">
-    <h2>Sprachauswahl / Language Selector</h2>
-    <select id="language-select">
-      <option value="de" selected>Deutsch</option>
-      <option value="en">English</option>
-    </select>
-  </div>
+<body id="top">
 
-  <h1 id="main-title">Mounjaro Kwikpen Kalkulator</h1>
-  <div class="container">
-    <div class="input-section">
-      <div class="input-group">
-        <label id="label-pen-type" for="pen-type"></label>
-        <select id="pen-type">
-          <option value="2.5">Mounjaro Kwikpen 2,5mg</option>
-          <option value="5">Mounjaro Kwikpen 5mg</option>
-          <option value="7.5">Mounjaro Kwikpen 7,5mg</option>
-          <option value="10">Mounjaro Kwikpen 10mg</option>
-          <option value="12.5">Mounjaro Kwikpen 12,5mg</option>
-          <option value="15">Mounjaro Kwikpen 15mg</option>
-        </select>
+  <!-- ===================================================================
+       Icon-Sprite: einmal definiert, überall per <use href="#…"> genutzt.
+       Selbst gezeichnete, schlichte Strich-Icons (24 × 24).
+       =================================================================== -->
+  <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6Z"/></symbol>
+    <symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01"/></symbol>
+    <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M3 14.75h18M9 4v16"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6h.01"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.8 21.2 19.5H2.8Z"/><path d="M12 10v4M12 16.9h.01"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M15 9V6.5A2.5 2.5 0 0 0 12.5 4h-6A2.5 2.5 0 0 0 4 6.5v6A2.5 2.5 0 0 0 6.5 15H9"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.6"/><path d="M4 4v4.6h4.6"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-8.5 8.5M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.2 19 6v5.2c0 4.4-2.9 7.8-7 9.6-4.1-1.8-7-5.2-7-9.6V6Z"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  </svg>
+
+  <a class="skip-link" href="#rechner" data-i18n="skipLink">Zum Rechner springen</a>
+
+  <!-- ===================================================================
+       1. Kopfbereich (bleibt beim Scrollen sichtbar)
+       =================================================================== -->
+  <header class="app-header">
+    <!-- Mobil: zwei Zeilen (Marke + Aktionen / Navigation als Tabs),
+         Desktop: eine Zeile (Marke | Navigation | Aktionen) – siehe CSS-Grid. -->
+    <div class="container header-inner">
+      <a class="brand" href="#top">
+        <img class="brand-logo" src="assets/img/favicon.svg" alt="" width="32" height="32">
+        <span class="brand-name" data-i18n="brandName">KwikPen Rechner</span>
+      </a>
+
+      <!-- Abschnittsnavigation: markiert per aria-current, wo man gerade ist -->
+      <nav class="section-nav" aria-label="Seitennavigation" data-i18n-attr="aria-label:navLabel">
+        <ul class="section-nav-list">
+          <li><a href="#rechner" class="nav-link" data-nav="rechner">
+            <svg class="icon" aria-hidden="true"><use href="#i-calc"/></svg><span data-i18n="navCalc">Rechner</span></a></li>
+          <li><a href="#tabelle" class="nav-link" data-nav="tabelle">
+            <svg class="icon" aria-hidden="true"><use href="#i-table"/></svg><span data-i18n="navTable">Dosis-Tabelle</span></a></li>
+          <li><a href="#methodik" class="nav-link" data-nav="methodik">
+            <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><span data-i18n="navHow">So funktioniert’s</span></a></li>
+        </ul>
+      </nav>
+
+      <div class="header-actions">
+        <!-- Sprachwahl als Umschalter: beide Optionen sofort sichtbar -->
+        <div class="lang-switch" role="group" aria-label="Sprache wählen" data-i18n-attr="aria-label:langLabel">
+          <button type="button" class="lang-btn" data-lang="de" lang="de" aria-pressed="true">DE</button>
+          <button type="button" class="lang-btn" data-lang="en" lang="en" aria-pressed="false">EN</button>
+        </div>
+        <button type="button" class="icon-btn" id="theme-toggle" aria-label="Dunkles Farbschema aktivieren">
+          <svg class="icon icon-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+          <svg class="icon icon-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+        </button>
       </div>
-      <div class="input-group">
-        <label id="label-clicks" for="clicks"></label>
-        <input type="number" id="clicks" min="0" max="60">
-        <div id="clicks-error" class="error"></div>
-      </div>
-      <div class="input-group">
-        <label id="label-dose" for="dose"></label>
-        <input type="number" id="dose" step="0.01">
-        <div id="dose-error" class="error"></div>
-      </div>
-      <div class="input-group">
-        <label id="label-weeks" for="weeks"></label>
-        <input type="number" id="weeks" min="1" step="1">
-        <div id="weeks-error" class="error"></div>
-      </div>
-      <button class="reset-button" id="reset"></button>
     </div>
-    <div class="price-info">
-      <h2 id="price-info-title"></h2>
-      <div class="price-item">
-        <label id="label-custom-price-enabled" for="custom-price-enabled"></label>
-        <input type="checkbox" id="custom-price-enabled">
+  </header>
+
+  <main id="main">
+
+    <!-- =================================================================
+         2. Rechner
+         ================================================================= -->
+    <section id="rechner" class="section section-calc" aria-labelledby="hero-title" tabindex="-1">
+      <div class="container">
+
+        <div class="hero">
+          <h1 id="hero-title" data-i18n="heroTitle">Mounjaro KwikPen Rechner</h1>
+          <p class="lead" data-i18n="heroLead">In drei Schritten von der Klickzahl zur Dosis – inklusive Reichweite des Pens und Kosten pro Woche.</p>
+          <ul class="badges">
+            <li><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span data-i18n="heroBadgePrivacy">Kein Tracking</span></li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="heroBadgeOffline">Läuft komplett im Browser</span></li>
+          </ul>
+        </div>
+
+        <noscript>
+          <p class="notice notice-error">Dieser Rechner benötigt JavaScript. / This calculator requires JavaScript.</p>
+        </noscript>
+        <p class="notice notice-error" id="fatal-error" role="alert" hidden></p>
+
+        <div class="calc-layout">
+
+          <!-- Linke Spalte: die drei Schritte -->
+          <div class="calc-steps">
+
+            <!-- Schritt 1: Pen ----------------------------------------- -->
+            <section class="card step" aria-labelledby="step1-title">
+              <header class="step-head">
+                <span class="step-num" aria-hidden="true">1</span>
+                <div>
+                  <h2 id="step1-title" class="step-title" data-i18n="step1Title">Pen wählen</h2>
+                  <p class="step-hint" data-i18n="step1Hint">Wirkstärke laut Rezept bzw. Packung.</p>
+                </div>
+              </header>
+              <fieldset class="pen-fieldset">
+                <legend class="sr-only" data-i18n="penLegend">Wirkstärke des KwikPen</legend>
+                <!-- Optionen werden aus MounjaroCalc.PENS erzeugt (eine Datenquelle) -->
+                <div class="pen-grid" id="pen-grid"></div>
+              </fieldset>
+            </section>
+
+            <!-- Schritt 2: Dosierung ----------------------------------- -->
+            <section class="card step" aria-labelledby="step2-title">
+              <header class="step-head">
+                <span class="step-num" aria-hidden="true">2</span>
+                <div>
+                  <h2 id="step2-title" class="step-title" data-i18n="step2Title">Dosierung festlegen</h2>
+                  <p class="step-hint" data-i18n="step2Hint">Wähle, was du kennst – der Rest wird berechnet.</p>
+                </div>
+              </header>
+
+              <!-- Eingabeart: EIN führender Wert statt drei sich gegenseitig
+                   überschreibender Felder → klar, was Eingabe und was Ergebnis ist. -->
+              <fieldset class="segmented" id="mode-switch">
+                <legend class="segmented-legend" data-i18n="modeLegend">Eingabe über</legend>
+                <div class="segmented-track">
+                  <label class="segmented-option">
+                    <input type="radio" name="mode" value="clicks" checked>
+                    <span data-i18n="modeClicks">Klicks</span>
+                  </label>
+                  <label class="segmented-option">
+                    <input type="radio" name="mode" value="dose">
+                    <span data-i18n="modeDose">Dosis</span>
+                  </label>
+                  <label class="segmented-option">
+                    <input type="radio" name="mode" value="weeks">
+                    <span data-i18n="modeWeeks">Wochen</span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <div class="field field-primary">
+                <label class="field-label" for="primary-input" id="primary-label">Klicks pro Anwendung</label>
+                <p class="field-desc" id="primary-desc">Wie viele Klicks drehst du pro Anwendung?</p>
+
+                <div class="stepper">
+                  <button type="button" class="stepper-btn" id="primary-dec" aria-label="Wert verringern" data-i18n-attr="aria-label:decrease">
+                    <svg class="icon" aria-hidden="true"><use href="#i-minus"/></svg>
+                  </button>
+                  <div class="stepper-input">
+                    <input id="primary-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false"
+                           aria-describedby="primary-desc primary-range-hint primary-msg">
+                    <span class="stepper-unit" id="primary-unit" aria-hidden="true">Klicks</span>
+                  </div>
+                  <button type="button" class="stepper-btn" id="primary-inc" aria-label="Wert erhöhen" data-i18n-attr="aria-label:increase">
+                    <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>
+                  </button>
+                </div>
+
+                <input type="range" class="range" id="primary-range" min="1" max="60" step="1" value="60">
+                <div class="range-scale" aria-hidden="true">
+                  <span id="range-min">1</span><span id="range-max">60</span>
+                </div>
+                <!-- Bereich als Text für Screenreader (optisch zeigt ihn die Skala) -->
+                <p class="sr-only" id="primary-range-hint"></p>
+
+                <div class="presets" role="group" aria-label="Schnellauswahl" data-i18n-attr="aria-label:presetsLabel" id="presets"></div>
+
+                <!-- Meldungen werden vorgelesen, sobald sie sich ändern -->
+                <div class="field-msg" id="primary-msg" aria-live="polite"></div>
+              </div>
+            </section>
+
+            <!-- Schritt 3: Preis & Annahmen ---------------------------- -->
+            <section class="card step" aria-labelledby="step3-title">
+              <header class="step-head">
+                <span class="step-num" aria-hidden="true">3</span>
+                <div>
+                  <h2 id="step3-title" class="step-title" data-i18n="step3Title">Preis &amp; Annahmen</h2>
+                  <p class="step-hint" data-i18n="step3Hint">Optional – nur nötig, wenn dein Preis abweicht.</p>
+                </div>
+              </header>
+
+              <div class="price-row">
+                <div>
+                  <span class="price-row-label" data-i18n="listPrice">Richtpreis pro Pen</span>
+                  <span class="price-row-note" data-i18n="listPriceNote">Richtwerte ohne Gewähr – Apothekenpreise können abweichen.</span>
+                </div>
+                <strong class="price-row-value" id="list-price">–</strong>
+              </div>
+
+              <label class="switch">
+                <input type="checkbox" id="custom-price-enabled" role="switch">
+                <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+                <span class="switch-label" data-i18n="customPriceToggle">Eigenen Preis verwenden</span>
+              </label>
+
+              <div class="field" id="custom-price-field" hidden>
+                <label class="field-label" for="custom-price" data-i18n="customPriceLabel">Dein Pen-Preis</label>
+                <div class="input-affix">
+                  <input id="custom-price" type="text" inputmode="decimal" autocomplete="off" aria-describedby="custom-price-msg">
+                  <span class="input-affix-unit" aria-hidden="true">€</span>
+                </div>
+                <div class="field-msg" id="custom-price-msg" aria-live="polite"></div>
+              </div>
+
+              <details class="advanced" id="advanced">
+                <summary>
+                  <span data-i18n="advancedSummary">Erweiterte Annahmen</span>
+                  <svg class="icon advanced-chevron" aria-hidden="true"><use href="#i-chevron"/></svg>
+                </summary>
+                <div class="field">
+                  <label class="field-label" for="clicks-per-pen" data-i18n="clicksPerPenLabel">Klicks pro Pen (gesamt)</label>
+                  <div class="input-affix">
+                    <input id="clicks-per-pen" type="text" inputmode="numeric" autocomplete="off" aria-describedby="clicks-per-pen-hint clicks-per-pen-msg">
+                    <span class="input-affix-unit" aria-hidden="true" data-i18n="unitClicks">Klicks</span>
+                  </div>
+                  <p class="field-hint" id="clicks-per-pen-hint"></p>
+                  <div class="field-msg" id="clicks-per-pen-msg" aria-live="polite"></div>
+                </div>
+              </details>
+            </section>
+          </div>
+
+          <!-- Rechte Spalte: Ergebnis (auf großen Bildschirmen "sticky") -->
+          <div class="calc-aside">
+            <section class="card result" id="ergebnis" aria-labelledby="result-title" tabindex="-1">
+              <header class="step-head">
+                <span class="step-num step-num-result" aria-hidden="true">
+                  <svg class="icon"><use href="#i-check"/></svg>
+                </span>
+                <h2 id="result-title" class="step-title" data-i18n="resultTitle">Ergebnis</h2>
+              </header>
+
+              <p class="result-empty" id="result-empty" hidden data-i18n="resultEmpty">Gib in Schritt 2 einen gültigen Wert ein, um dein Ergebnis zu sehen.</p>
+
+              <div class="result-body" id="result-body">
+                <!-- Kopfzahl: Dosis pro Woche + Anteil an der vollen Dosis -->
+                <div class="result-hero">
+                  <div class="result-figure">
+                    <p class="result-dose"><span id="res-dose">–</span>&nbsp;<span class="result-dose-unit">mg</span></p>
+                    <p class="result-dose-caption" data-i18n="resultPerWeek">pro Woche</p>
+                    <p class="result-sub" id="res-sub"></p>
+                  </div>
+                  <figure class="meter-ring" id="res-ring" role="img">
+                    <svg viewBox="0 0 120 120" aria-hidden="true">
+                      <circle class="meter-ring-track" cx="60" cy="60" r="50"/>
+                      <circle class="meter-ring-fill" id="res-ring-fill" cx="60" cy="60" r="50"/>
+                    </svg>
+                    <figcaption class="meter-ring-label">
+                      <span class="meter-ring-value" id="res-ring-value">–</span>
+                      <span class="meter-ring-caption" data-i18n="ringCaption">der vollen Dosis</span>
+                    </figcaption>
+                  </figure>
+                </div>
+
+                <!-- Kennzahlen als Kacheln -->
+                <dl class="kpis">
+                  <div class="kpi">
+                    <dt data-i18n="kpiWeeks">Reicht für</dt>
+                    <dd id="res-weeks">–</dd>
+                    <dd class="kpi-note" id="res-pens-year"></dd>
+                  </div>
+                  <div class="kpi">
+                    <dt data-i18n="kpiWeekCost">Kosten pro Woche</dt>
+                    <dd id="res-week-cost">–</dd>
+                  </div>
+                  <div class="kpi">
+                    <dt data-i18n="kpiMonthCost">Kosten pro Monat</dt>
+                    <dd id="res-month-cost">–</dd>
+                    <dd class="kpi-note" data-i18n="kpiMonthNote">≈ 4,35 Wochen</dd>
+                  </div>
+                  <div class="kpi">
+                    <dt data-i18n="kpiMgCost">Kosten pro mg</dt>
+                    <dd id="res-mg-cost">–</dd>
+                  </div>
+                </dl>
+
+                <!-- Visualisierung: 300 Klicks, aufgeteilt in Wochen-Segmente -->
+                <figure class="pen-bar">
+                  <figcaption class="pen-bar-title" data-i18n="penBarTitle">So teilt sich der Pen auf</figcaption>
+                  <div class="pen-bar-canvas" id="pen-bar-canvas"></div>
+                  <div class="pen-bar-scale" aria-hidden="true"><span>0</span><span id="pen-bar-end">300 Klicks</span></div>
+                  <ul class="legend" aria-hidden="true">
+                    <li><span class="legend-swatch legend-swatch-dose"></span><span id="pen-bar-legend-dose"></span></li>
+                    <li id="pen-bar-legend-rest-item"><span class="legend-swatch legend-swatch-rest"></span><span data-i18n="penBarLegendRest">Rest</span></li>
+                  </ul>
+                </figure>
+
+                <p class="notice" id="res-remainder"></p>
+
+                <div class="summary">
+                  <h3 class="summary-title" data-i18n="summaryTitle">Zusammenfassung</h3>
+                  <p class="summary-text" id="res-summary" aria-live="polite"></p>
+                </div>
+              </div>
+
+              <div class="result-actions">
+                <button type="button" class="btn btn-primary" id="copy-link">
+                  <svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg><span data-i18n="copyLink">Link kopieren</span>
+                </button>
+                <button type="button" class="btn btn-ghost" id="reset">
+                  <svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg><span data-i18n="reset">Zurücksetzen</span>
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <!-- Medizinischer Hinweis: volle Breite direkt unter dem Rechner -->
+        <aside class="notice notice-warning disclaimer" aria-labelledby="disclaimer-title">
+          <svg class="icon notice-icon" aria-hidden="true"><use href="#i-alert"/></svg>
+          <div>
+            <h2 class="disclaimer-title" id="disclaimer-title" data-i18n="disclaimerTitle">Wichtiger Hinweis</h2>
+            <p data-i18n="disclaimerText">Dieser Rechner ist ein privates, unabhängiges Hilfsmittel ohne Anspruch auf Vollständigkeit oder Richtigkeit und ersetzt keine ärztliche oder pharmazeutische Beratung. Das Abmessen von Teildosen über einzelne Klicks ist in der Gebrauchsanweisung des Herstellers nicht vorgesehen. Maßgeblich sind stets die Packungsbeilage und die ärztlich verordnete Dosierung. Die Nutzung erfolgt auf eigene Verantwortung.</p>
+          </div>
+        </aside>
       </div>
-      <div class="price-item">
-        <label id="label-custom-price" for="custom-price"></label>
-        <input type="number" id="custom-price" step="0.01" disabled>
+    </section>
+
+    <!-- =================================================================
+         3. Dosis-Tabelle
+         ================================================================= -->
+    <section id="tabelle" class="section" aria-labelledby="table-title" tabindex="-1">
+      <div class="container">
+        <header class="section-head">
+          <h2 id="table-title" data-i18n="tableTitle">Dosis-Tabelle</h2>
+          <p class="lead" data-i18n="tableLead">Dosis in mg für jede Klickzahl und alle Pen-Stärken. Dein Pen und deine Klickzahl sind hervorgehoben.</p>
+          <p class="section-tip" data-i18n="tableTip">Tipp: Tippe auf einen Wert, um ihn in den Rechner zu übernehmen.</p>
+        </header>
+
+        <div class="card table-card">
+          <!-- Eigener Scroll-Container mit fixiertem Tabellenkopf -->
+          <div class="table-scroll" id="table-scroll" tabindex="0" role="region" aria-labelledby="table-caption">
+            <table class="dose-table" id="dose-table">
+              <caption id="table-caption" class="sr-only" data-i18n="tableCaption">Dosis in mg nach Klickzahl (Zeilen) und Wirkstärke des Pens (Spalten)</caption>
+              <thead><tr id="dose-table-head"></tr></thead>
+              <tbody id="dose-table-body"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
-      <div class="price-item">
-        <label id="label-pen-price"></label>
-        <div id="pen-price"></div>
+    </section>
+
+    <!-- =================================================================
+         4. So funktioniert's
+         ================================================================= -->
+    <section id="methodik" class="section" aria-labelledby="how-title" tabindex="-1">
+      <div class="container">
+        <header class="section-head">
+          <h2 id="how-title" data-i18n="howTitle">So funktioniert’s</h2>
+          <p class="lead" data-i18n="howLead">Transparente Rechenwege – damit du jedes Ergebnis nachvollziehen kannst.</p>
+        </header>
+
+        <ol class="how-grid">
+          <li class="card how-card">
+            <span class="how-num" aria-hidden="true">1</span>
+            <h3 data-i18n="how1Title">60 Klicks = volle Dosis</h3>
+            <p data-i18n="how1Text">Der Dosierknopf des KwikPen rastet in Klicks ein. Der Rechner nimmt an, dass 60 Klicks der vollen Wirkstärke entsprechen – beim 10-mg-Pen also 10 mg.</p>
+          </li>
+          <li class="card how-card">
+            <span class="how-num" aria-hidden="true">2</span>
+            <h3 data-i18n="how2Title">Lineare Interpolation</h3>
+            <p data-i18n="how2Text">Zwischenwerte werden aus Referenzpunkten (0, 30 und 60 Klicks) berechnet. Die Umrechnung Dosis → Klicks rundet immer ab, damit nie mehr als die gewünschte Dosis herauskommt.</p>
+            <p class="formula"><span class="formula-label" data-i18n="formulaLabel">Formel</span><code>y = y₁ + (x − x₁) · (y₂ − y₁) / (x₂ − x₁)</code></p>
+          </li>
+          <li class="card how-card">
+            <span class="how-num" aria-hidden="true">3</span>
+            <h3 data-i18n="how3Title">Reichweite des Pens</h3>
+            <p data-i18n="how3Text">Angenommen werden 300 Klicks pro Pen und eine Anwendung pro Woche. Volle Wochen = abgerundet (300 ÷ Klicks); ein Rest wird separat ausgewiesen. Den Gesamtinhalt kannst du unter „Erweiterte Annahmen“ anpassen.</p>
+          </li>
+          <li class="card how-card">
+            <span class="how-num" aria-hidden="true">4</span>
+            <h3 data-i18n="how4Title">Kosten</h3>
+            <p data-i18n="how4Text">Kosten pro Woche = Pen-Preis ÷ volle Wochen. Kosten pro mg = Kosten pro Woche ÷ Dosis. Ein ungenutzter Rest ist damit ehrlich eingepreist. Monatswerte beruhen auf durchschnittlich 4,35 Wochen.</p>
+          </li>
+        </ol>
       </div>
-      <div class="price-item">
-        <label id="label-dose-price"></label>
-        <div id="dose-price"></div>
+    </section>
+  </main>
+
+  <!-- ===================================================================
+       5. Fußzeile – Lizenz, Quellcode, Marken- und Datenschutzhinweis
+       =================================================================== -->
+  <footer class="app-footer">
+    <div class="container footer-grid">
+      <div class="footer-meta">
+        <p>
+          © 2025 monkeydriven ·
+          <a href="https://github.com/monkeydriven/mounjaro_calc/blob/main/LICENSE" rel="license noopener" target="_blank"><span data-i18n="footerLicense">MIT-Lizenz</span><span class="sr-only" data-i18n="footerNewTab">(öffnet in neuem Tab)</span></a> ·
+          <a href="https://github.com/monkeydriven/mounjaro_calc" rel="noopener" target="_blank"><span data-i18n="footerSource">Quellcode auf GitHub</span><span class="sr-only" data-i18n="footerNewTab">(öffnet in neuem Tab)</span></a>
+        </p>
+        <p class="footer-small" data-i18n="footerPrivacy">Keine Cookies, kein Tracking, keine externen Skripte. Deine Eingaben werden nur lokal in deinem Browser gespeichert.</p>
+        <p class="footer-small" data-i18n="footerTrademark">Mounjaro® und KwikPen® sind Marken von Eli Lilly and Company. Dieses Projekt ist unabhängig und steht in keiner Verbindung zu Eli Lilly and Company.</p>
       </div>
-      <div class="price-item">
-        <label id="label-mg-price"></label>
-        <div id="mg-price"></div>
-      </div>
-      <div class="price-item" id="price-info-disclaimer"></div>
-      
-      <!-- Buy Me a Coffee Button -->
-      <script type="text/javascript"
-              src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
-              data-name="bmc-button"
-              data-slug="monkeydriven"
-              data-color="#FF5F5F"
-              data-emoji="💉"
-              data-font="Cookie"
-              data-text="Buy me a click"
-              data-outline-color="#000000"
-              data-font-color="#ffffff"
-              data-coffee-color="#FFDD00">
-      </script>
+      <!-- Unterstützung: schlichter Link statt Fremd-Skript (keine Daten an Dritte beim Seitenaufruf) -->
+      <a class="btn btn-support" href="https://www.buymeacoffee.com/monkeydriven" rel="noopener" target="_blank">
+        <span aria-hidden="true">💉</span><span data-i18n="footerSupport">Buy me a click</span>
+        <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg>
+        <span class="sr-only" data-i18n="footerNewTab">(öffnet in neuem Tab)</span>
+      </a>
+    </div>
+  </footer>
+
+  <!-- Mobile Kurzanzeige des Ergebnisses (erscheint, solange das Ergebnis
+       außerhalb des sichtbaren Bereichs liegt) -->
+  <div class="mini-result" id="mini-result" hidden>
+    <div class="container mini-result-inner">
+      <p class="mini-result-text" id="mini-result-text"></p>
+      <a class="btn btn-primary btn-small" href="#ergebnis" id="mini-result-link">
+        <span data-i18n="miniDetails">Details</span>
+        <svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg>
+      </a>
     </div>
   </div>
 
-  <!-- Zusammenfassungs- und Matrixbereich -->
-  <div id="summary-section">
-    <h2 id="summary-title"></h2>
-    <p id="summary-text"></p>
-    <p id="warning-text"></p>
-    <h3 id="lookup-table-title"></h3>
-    <table id="lookup-table">
-      <thead>
-        <tr>
-          <th id="lookup-th-clicks"></th>
-          <th id="lookup-th-dose"></th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <script>
-    // -----------------------------
-    // Übersetzungen (Deutsch/Englisch)
-    // -----------------------------
-    const i18n = {
-      de: {
-        mainTitle: "Mounjaro Kwikpen Kalkulator",
-        labelPenType: "Pen Auswahl:",
-        labelClicks: "Anzahl Klicks:",
-        labelDose: "Dosis (mg):",
-        labelWeeks: "Wochen (ganzzahlig):",
-        errorClicks: "Maximale Klickzahl überschritten (60).",
-        errorDose: "Maximale Dosis überschritten.",
-        errorWeeks: "Bitte nur ganze Wochen angeben.",
-        resetButton: "Zurücksetzen",
-        priceInfoTitle: "Preisinformation",
-        labelCustomPriceEnabled: "Eigene Preiseingabe aktivieren",
-        labelCustomPrice: "Eigener Pen-Preis (EUR):",
-        labelPenPrice: "Pen Preis:",
-        labelDosePrice: "Preis pro Dosis:",
-        labelMgPrice: "Preis pro mg:",
-        priceInfoDisclaimer: "Achtung: Der Rechner hat keinen Anspruch auf Vollständigkeit und stellt keine medizinische Beratung dar. Die Nutzung erfolgt auf eigene Verantwortung. Maßgeblich ist stets die Packungsbeilage bzw. die verschriebene Dosierung.",
-        summaryTitle: "Zusammenfassung",
-        lookupTableTitle: "Lookup-Matrix",
-        lookupThClicks: "Klicks",
-        lookupThDose: "Dosis (mg)",
-        summaryText: (penType, clicks, dosesPerPen, dose, pricePerDose) => 
-          `Bei deiner aktuellen Auswahl des Mounjaro Kwikpen ${penType}mg bekommst du mit ${clicks} Klicks pro Anwendung ` +
-          `${dosesPerPen} Dosen aus dem Pen. Du entnimmst ${dose.toFixed(2)} mg Wirkstoff pro Woche und zahlst dafür ` +
-          `${pricePerDose} €.`,
-        warningNonExact:
-          "Hinweis: 300 Klicks teilen sich nicht exakt in gleiche Dosen. Daher wurde auf ganze Wochen abgerundet. " +
-          "In der letzten Woche könnten ggf. 60 Klicks benötigt werden, um den Pen vollständig zu entleeren."
-      },
-      en: {
-        mainTitle: "Mounjaro Kwikpen Calculator",
-        labelPenType: "Select Pen:",
-        labelClicks: "Number of clicks:",
-        labelDose: "Dose (mg):",
-        labelWeeks: "Weeks (integer):",
-        errorClicks: "Max clicks exceeded (60).",
-        errorDose: "Maximum dose exceeded.",
-        errorWeeks: "Please enter whole weeks only.",
-        resetButton: "Reset",
-        priceInfoTitle: "Price Information",
-        labelCustomPriceEnabled: "Enable custom price input",
-        labelCustomPrice: "Custom Pen Price (EUR):",
-        labelPenPrice: "Pen Price:",
-        labelDosePrice: "Price per Dose:",
-        labelMgPrice: "Price per mg:",
-        priceInfoDisclaimer: "Warning: This calculator is not comprehensive and does not constitute medical advice. Use at your own risk. The package insert and prescribed dosage are always binding.",
-        summaryTitle: "Summary",
-        lookupTableTitle: "Lookup Matrix",
-        lookupThClicks: "Clicks",
-        lookupThDose: "Dose (mg)",
-        summaryText: (penType, clicks, dosesPerPen, dose, pricePerDose) => 
-          `With your current choice of Mounjaro Kwikpen ${penType}mg, at ${clicks} clicks per use, ` +
-          `you get ${dosesPerPen} doses from the pen. You're extracting ${dose.toFixed(2)} mg of the substance per week, ` +
-          `and the cost is ${pricePerDose} €.`,
-        warningNonExact:
-          "Note: 300 clicks do not split evenly into equal doses. Weeks have been rounded down. " +
-          "In the final week, you might need 60 clicks to fully empty the pen."
-      }
-    };
-
-    // -----------------------------
-    // Globale Variablen & Daten
-    // -----------------------------
-    let currentLang = "de"; // Standard: Deutsch
-    const CLICKS_MAX = 60;
-    const DOSES_PER_PEN = 300;
-    const DEFAULT_WEEKS = 5;
-    const PRICES = {
-      '2.5': 206.02,
-      '5': 276.83,
-      '7.5': 383.03,
-      '10': 383.03,
-      '12.5': 489.23,
-      '15': 489.23
-    };
-    // Referenz-Lookup-Werte (für 0, 30, 60 Klicks; die Matrix wird dynamisch von 1 bis 60 erstellt)
-    const LOOKUP_TABLES = {
-      '2.5':  { clicks: [0, 30, 60], doses: [0, 1.25, 2.5] },
-      '5':    { clicks: [0, 30, 60], doses: [0, 2.5, 5] },
-      '7.5':  { clicks: [0, 30, 60], doses: [0, 3.75, 7.5] },
-      '10':   { clicks: [0, 30, 60], doses: [0, 5, 10] },
-      '12.5': { clicks: [0, 30, 60], doses: [0, 6.25, 12.5] },
-      '15':   { clicks: [0, 30, 60], doses: [0, 7.5, 15] }
-    };
-
-    // -----------------------------
-    // DOM Elemente
-    // -----------------------------
-    const elements = {
-      languageSelect: document.getElementById('language-select'),
-      mainTitle: document.getElementById('main-title'),
-      penTypeLabel: document.getElementById('label-pen-type'),
-      clicksLabel: document.getElementById('label-clicks'),
-      doseLabel: document.getElementById('label-dose'),
-      weeksLabel: document.getElementById('label-weeks'),
-      clicksInput: document.getElementById('clicks'),
-      doseInput: document.getElementById('dose'),
-      weeksInput: document.getElementById('weeks'),
-      clicksError: document.getElementById('clicks-error'),
-      doseError: document.getElementById('dose-error'),
-      weeksError: document.getElementById('weeks-error'),
-      resetButton: document.getElementById('reset'),
-      priceInfoTitle: document.getElementById('price-info-title'),
-      penPriceLabel: document.getElementById('label-pen-price'),
-      dosePriceLabel: document.getElementById('label-dose-price'),
-      mgPriceLabel: document.getElementById('label-mg-price'),
-      penPrice: document.getElementById('pen-price'),
-      dosePrice: document.getElementById('dose-price'),
-      mgPrice: document.getElementById('mg-price'),
-      priceInfoDisclaimer: document.getElementById('price-info-disclaimer'),
-      summaryTitle: document.getElementById('summary-title'),
-      summaryText: document.getElementById('summary-text'),
-      warningText: document.getElementById('warning-text'),
-      lookupTableTitle: document.getElementById('lookup-table-title'),
-      lookupThClicks: document.getElementById('lookup-th-clicks'),
-      lookupThDose: document.getElementById('lookup-th-dose'),
-      lookupTableBody: document.querySelector('#lookup-table tbody'),
-      penTypeSelect: document.getElementById('pen-type'),
-      // Neue Elemente für eigene Preiseingabe
-      labelCustomPriceEnabled: document.getElementById('label-custom-price-enabled'),
-      customPriceEnabledCheckbox: document.getElementById('custom-price-enabled'),
-      labelCustomPrice: document.getElementById('label-custom-price'),
-      customPriceInput: document.getElementById('custom-price')
-    };
-
-    // -----------------------------
-    // Sprachwechsel
-    // -----------------------------
-    function setLanguage(lang) {
-      currentLang = lang;
-      const t = i18n[lang];
-
-      // Labels & Texte aktualisieren
-      elements.mainTitle.textContent                  = t.mainTitle;
-      elements.penTypeLabel.textContent               = t.labelPenType;
-      elements.clicksLabel.textContent                = t.labelClicks;
-      elements.doseLabel.textContent                  = t.labelDose;
-      elements.weeksLabel.textContent                 = t.labelWeeks;
-      elements.clicksError.textContent                = t.errorClicks;
-      elements.doseError.textContent                  = t.errorDose;
-      elements.weeksError.textContent                 = t.errorWeeks;
-      elements.resetButton.textContent                = t.resetButton;
-      elements.priceInfoTitle.textContent             = t.priceInfoTitle;
-      elements.labelCustomPriceEnabled.textContent    = t.labelCustomPriceEnabled;
-      elements.labelCustomPrice.textContent           = t.labelCustomPrice;
-      elements.penPriceLabel.textContent              = t.labelPenPrice;
-      elements.dosePriceLabel.textContent             = t.labelDosePrice;
-      elements.mgPriceLabel.textContent               = t.labelMgPrice;
-      elements.priceInfoDisclaimer.textContent        = t.priceInfoDisclaimer;
-      elements.summaryTitle.textContent               = t.summaryTitle;
-      elements.lookupTableTitle.textContent           = t.lookupTableTitle;
-      elements.lookupThClicks.textContent             = t.lookupThClicks;
-      elements.lookupThDose.textContent               = t.lookupThDose;
-
-      // Alle Daten aktualisieren
-      updateAll();
-    }
-
-    // -----------------------------
-    // Mathematische Funktionen
-    // -----------------------------
-    function interpolate(x, x1, x2, y1, y2) {
-      return y1 + (x - x1) * (y2 - y1) / (x2 - x1);
-    }
-
-    function findInterval(value, array) {
-      for (let i = 0; i < array.length - 1; i++) {
-        if (value >= array[i] && value <= array[i + 1]) {
-          return i;
-        }
-      }
-      return -1;
-    }
-
-    // Klicks → Dosis
-    function calculateDoseFromClicks(clicks, penType) {
-      const table = LOOKUP_TABLES[penType];
-      if (clicks > CLICKS_MAX) {
-        elements.clicksError.style.display = 'block';
-        return table.doses[table.doses.length - 1];
-      }
-      elements.clicksError.style.display = 'none';
-      
-      const interval = findInterval(clicks, table.clicks);
-      if (interval === -1) return 0;
-      
-      return interpolate(
-        clicks,
-        table.clicks[interval],
-        table.clicks[interval + 1],
-        table.doses[interval],
-        table.doses[interval + 1]
-      );
-    }
-
-    // Dosis → Klicks
-    function calculateClicksFromDose(dose, penType) {
-      const table = LOOKUP_TABLES[penType];
-      if (dose > table.doses[table.doses.length - 1]) {
-        elements.doseError.style.display = 'block';
-        return CLICKS_MAX;
-      }
-      elements.doseError.style.display = 'none';
-      
-      const interval = findInterval(dose, table.doses);
-      if (interval === -1) return 0;
-      
-      return Math.floor(interpolate(
-        dose,
-        table.doses[interval],
-        table.doses[interval + 1],
-        table.clicks[interval],
-        table.clicks[interval + 1]
-      ));
-    }
-
-    // Klicks → Wochen
-    function calculateWeeksFromClicks(clicks) {
-      return clicks > 0 ? Math.floor(DOSES_PER_PEN / clicks) : 0;
-    }
-
-    // Wochen → Klicks
-    function calculateClicksFromWeeks(weeks) {
-      return weeks > 0 ? Math.floor(DOSES_PER_PEN / weeks) : 0;
-    }
-
-    // -----------------------------
-    // Update-Funktionen
-    // -----------------------------
-    function updatePriceInfo(penType, clicks) {
-      // Prüfen, ob die eigene Preiseingabe aktiv ist
-      let penPriceVal;
-      if (elements.customPriceEnabledCheckbox.checked) {
-        penPriceVal = parseFloat(elements.customPriceInput.value) || 0;
-      } else {
-        penPriceVal = PRICES[penType];
-      }
-
-      const chosenDose = parseFloat(elements.doseInput.value) || 0;
-      const dosesPerPen = (clicks > 0) ? Math.floor(DOSES_PER_PEN / clicks) : 0;
-
-      // Preis pro Pen
-      elements.penPrice.textContent = `${penPriceVal.toFixed(2)} €`;
-
-      // Preis pro Dosis
-      const dosePriceVal = (dosesPerPen > 0)
-        ? penPriceVal / dosesPerPen
-        : 0;
-      elements.dosePrice.textContent = (dosesPerPen > 0)
-        ? `${dosePriceVal.toFixed(2)} €`
-        : '-';
-
-      // Preis pro mg für die gewählte Dosis
-      if (dosesPerPen > 0 && chosenDose > 0) {
-        const pricePerMg = dosePriceVal / chosenDose;
-        elements.mgPrice.textContent = `${pricePerMg.toFixed(2)} €`;
-      } else {
-        elements.mgPrice.textContent = '-';
-      }
-    }
-
-    function updateSummary() {
-      const t = i18n[currentLang];
-      const penType = elements.penTypeSelect.value;
-      const clicks = parseInt(elements.clicksInput.value) || 0;
-      const dose = parseFloat(elements.doseInput.value) || 0;
-      
-      // Eigener oder Standardpreis?
-      let penPriceVal;
-      if (elements.customPriceEnabledCheckbox.checked) {
-        penPriceVal = parseFloat(elements.customPriceInput.value) || 0;
-      } else {
-        penPriceVal = PRICES[penType];
-      }
-
-      const dosesPerPen = (clicks > 0) ? Math.floor(DOSES_PER_PEN / clicks) : 0;
-      const pricePerDose = (dosesPerPen > 0) ? (penPriceVal / dosesPerPen).toFixed(2) : '-';
-
-      if (penType && clicks > 0 && dose > 0 && dosesPerPen > 0) {
-        elements.summaryText.textContent = t.summaryText(
-          penType,
-          clicks,
-          dosesPerPen,
-          dose,
-          pricePerDose
-        );
-      } else {
-        elements.summaryText.textContent = '';
-      }
-
-      if (clicks > 0) {
-        const exactWeeks = DOSES_PER_PEN / clicks;
-        if (exactWeeks !== Math.floor(exactWeeks)) {
-          elements.warningText.textContent = t.warningNonExact;
-        } else {
-          elements.warningText.textContent = "";
-        }
-      } else {
-        elements.warningText.textContent = "";
-      }
-
-      // Lookup-Matrix von 1 bis 60
-      let rows = '';
-      for (let i = 1; i <= 60; i++) {
-        const d = calculateDoseFromClicks(i, penType);
-        rows += `<tr><td>${i}</td><td>${d.toFixed(2)}</td></tr>`;
-      }
-      elements.lookupTableBody.innerHTML = rows;
-    }
-
-    function updateAll() {
-      const penType = elements.penTypeSelect.value;
-      const clicks = parseInt(elements.clicksInput.value) || 0;
-      updatePriceInfo(penType, clicks);
-      updateSummary();
-    }
-
-    function validateWeeksInput() {
-      const t = i18n[currentLang];
-      const weeksValue = elements.weeksInput.value;
-      if (weeksValue && parseFloat(weeksValue) % 1 !== 0) {
-        elements.weeksError.style.display = 'block';
-        elements.weeksError.textContent = t.errorWeeks;
-      } else {
-        elements.weeksError.style.display = 'none';
-      }
-    }
-
-    function setDefaultValues() {
-      elements.weeksInput.value = DEFAULT_WEEKS;
-      const penType = elements.penTypeSelect.value;
-      const clicks = calculateClicksFromWeeks(DEFAULT_WEEKS);
-      const dose = calculateDoseFromClicks(clicks, penType);
-      
-      elements.clicksInput.value = clicks;
-      elements.doseInput.value = dose.toFixed(2);
-      elements.customPriceEnabledCheckbox.checked = false;
-      elements.customPriceInput.disabled = true;
-      elements.customPriceInput.value = "";
-      updateAll();
-    }
-
-    // -----------------------------
-    // Event-Listener
-    // -----------------------------
-    elements.languageSelect.addEventListener('change', () => {
-      setLanguage(elements.languageSelect.value);
-    });
-
-    elements.clicksInput.addEventListener('input', () => {
-      const clicks = parseInt(elements.clicksInput.value) || 0;
-      const penType = elements.penTypeSelect.value;
-      const dose = calculateDoseFromClicks(clicks, penType);
-      const weeks = calculateWeeksFromClicks(clicks);
-      
-      elements.doseInput.value = dose.toFixed(2);
-      elements.weeksInput.value = weeks;
-      updateAll();
-    });
-
-    elements.doseInput.addEventListener('input', () => {
-      const dose = parseFloat(elements.doseInput.value) || 0;
-      const penType = elements.penTypeSelect.value;
-      const clicks = calculateClicksFromDose(dose, penType);
-      const weeks = calculateWeeksFromClicks(clicks);
-      
-      elements.clicksInput.value = clicks;
-      elements.weeksInput.value = weeks;
-      updateAll();
-    });
-
-    elements.weeksInput.addEventListener('input', () => {
-      validateWeeksInput();
-      const weeks = parseInt(elements.weeksInput.value) || 0;
-      const penType = elements.penTypeSelect.value;
-      const clicks = calculateClicksFromWeeks(weeks);
-      const dose = calculateDoseFromClicks(clicks, penType);
-      
-      elements.clicksInput.value = clicks;
-      elements.doseInput.value = dose.toFixed(2);
-      updateAll();
-    });
-
-    elements.penTypeSelect.addEventListener('change', () => {
-      setDefaultValues();
-    });
-
-    elements.resetButton.addEventListener('click', () => {
-      setDefaultValues();
-      elements.clicksError.style.display = 'none';
-      elements.doseError.style.display = 'none';
-      elements.weeksError.style.display = 'none';
-    });
-
-    elements.customPriceEnabledCheckbox.addEventListener('change', () => {
-      elements.customPriceInput.disabled = !elements.customPriceEnabledCheckbox.checked;
-      updateAll();
-    });
-
-    elements.customPriceInput.addEventListener('input', () => {
-      updateAll();
-    });
-
-    // -----------------------------
-    // Start
-    // -----------------------------
-    setLanguage(currentLang);
-    setDefaultValues();
-  </script>
+  <!-- Kurze Rückmeldungen (z. B. "Link kopiert") -->
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 </body>
 </html>

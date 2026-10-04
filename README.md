@@ -1,68 +1,88 @@
 # mounjaro_calc
-DE: Webtool für Mounjaro Kwikpen-Dosierung, Wochen &amp; Preise. Bidirektionale Berechnungen (Klicks↔Dosis) via linearer Interpolation, inkl. Lookup-Matrix &amp; Zusammenfassung. EN: Web tool for Kwikpen dosage, weeks &amp; pricing. Bidirectional calculations (clicks↔dosage) with linear interpolation, including lookup matrix &amp; summary.
 
-# Mounjaro Kwikpen Kalkulator
+DE: Webtool für die Mounjaro KwikPen-Dosierung, Wochen & Preise. Bidirektionale Berechnungen (Klicks ↔ Dosis ↔ Wochen) via linearer Interpolation, inkl. Dosis-Tabelle & Zusammenfassung.
+EN: Web tool for KwikPen dosage, weeks & pricing. Bidirectional calculations (clicks ↔ dose ↔ weeks) with linear interpolation, including a dose table & summary.
 
-Dieses Projekt ist ein webbasiertes Tool zur Berechnung von Dosierung, Wochenanzahl und Preisinformationen für verschiedene Mounjaro Kwikpen-Dosierungen. Es wurde mit HTML, CSS und JavaScript umgesetzt und nutzt Lookup-Tabellen sowie lineare Interpolation, um bidirektionale Berechnungen durchzuführen. Das bedeutet, dass der Nutzer entweder die Anzahl der Klicks oder die gewünschte Dosis eingeben kann – in beiden Fällen werden die jeweils zugehörigen Werte (Dosis, Klicks, Wochen und Preise) automatisch aktualisiert.
+# Mounjaro KwikPen Rechner
 
-## Funktionsweise und Architektur
+Ein webbasiertes Tool, das für alle Mounjaro KwikPen-Stärken (2,5 – 15 mg) Dosis, Reichweite in Wochen und Kosten berechnet. Es läuft komplett im Browser – ohne Server, ohne Tracking und ohne externe Abhängigkeiten.
 
-### Lookup-Tabellen & Lineare Interpolation
-Für jeden Kwikpen-Typ (z.B. 2,5mg, 5mg, 7,5mg, 10mg, 12,5mg, 15mg) existiert eine Lookup-Tabelle, die feste Referenzwerte enthält. In unserem Beispiel werden drei Punkte definiert:
-- **0 Klicks** entsprechen **0 mg**
-- **30 Klicks** entsprechen einem definierten Zwischenwert (z.B. 5 mg bei einem 10mg-Pen)
-- **60 Klicks** entsprechen der maximalen Dosis des Pens (z.B. 10 mg bei einem 10mg-Pen)
+> **Wichtiger Hinweis:** Der Rechner ist ein privates, unabhängiges Hilfsmittel und ersetzt keine ärztliche oder pharmazeutische Beratung. Das Abmessen von Teildosen über einzelne Klicks ist in der Gebrauchsanweisung des Herstellers nicht vorgesehen. Maßgeblich sind stets die Packungsbeilage und die ärztlich verordnete Dosierung.
 
-Mittels linearer Interpolation (Formel:  
-`y = y1 + (x - x1) * (y2 - y1) / (x2 - x1)`) wird der exakte Dosiswert für eine beliebige Klickzahl zwischen den Referenzpunkten berechnet. Die Umkehrfunktion (Dosis → Klicks) wird auf ähnliche Weise umgesetzt.
+## Bedienung in drei Schritten
 
-### Bidirektionale Berechnung
-- **Klicks → Dosis:** Wird die Anzahl der Klicks eingegeben, berechnet das Tool die entsprechende Dosis und die Anzahl der Wochen (unter Annahme, dass 300 Klicks pro Pen zur Verfügung stehen). Zusätzlich werden Preisinformationen wie der Preis pro Dosis und der Preis pro mg ermittelt.
-- **Dosis → Klicks:** Gibt der Nutzer die Dosis ein, so wird die nötige Klickanzahl (mittels Invers-Interpolation) berechnet, sodass der richtige Wert herauskommt.
-- **Wochen → Klicks:** Der Nutzer kann auch die Anzahl der Wochen (Dosen pro Pen) als ganze Zahl eingeben. Hierbei wird die Klickzahl ermittelt, indem `Klicks = floor(300 / Wochen)` berechnet wird.
+1. **Pen wählen** – Wirkstärke als Karte auswählen (inkl. Richtpreis und mg pro Klick).
+2. **Dosierung festlegen** – Eingabe wahlweise über **Klicks**, **Dosis (mg)** oder **Wochen pro Pen**. Es gibt immer genau *einen* führenden Wert; alles andere wird abgeleitet. Eingabe per Feld, Plus/Minus, Pfeiltasten, Schieberegler oder Schnellauswahl (¼, ½, ¾, voll).
+3. **Preis & Annahmen** – optional eigener Pen-Preis und (unter „Erweiterte Annahmen“) die Gesamtklicks pro Pen.
 
-### Fehlerbehandlung & Warnungen
-- Überschreitet der Nutzer die maximal erlaubte Klickzahl (60 Klicks) oder eine Dosis, die über den in der Lookup-Tabelle definierten Maximalwert liegt, wird eine Fehlermeldung eingeblendet und der Wert auf das Maximum begrenzt.
-- Zusätzlich wird geprüft, ob die Anzahl der Wochen als ganze Zahl eingegeben wurde. Sollte die Berechnung der Wochen (basierend auf der Klickzahl) nicht exakt aufgehen, gibt das Tool einen Warnhinweis aus, dass in der letzten Woche ggf. 60 Klicks benötigt werden, um den Pen vollständig zu entleeren.
+Das **Ergebnis** zeigt die Dosis pro Woche, den Anteil an der vollen Dosis, die Reichweite, Kosten pro Woche/Monat/mg, eine Grafik der Pen-Aufteilung und einen eventuellen Rest. Auf großen Bildschirmen läuft es beim Scrollen mit, auf dem Smartphone erscheint unten eine Kurzanzeige.
 
-### Preiskalkulation
-Die Preisinformationen werden wie folgt ermittelt:
-- **Pen Preis:** Der jeweilige Festpreis des Pens (z.B. 383,03 € für 10mg oder 489,23 € für 12,5mg/15mg).
-- **Preis pro Dosis:** Berechnet, indem der Penpreis durch die Anzahl der Dosen pro Pen (bestimmt als `floor(300 / Klicks)`) geteilt wird.
-- **Preis pro mg:** Ermittelt aus dem Penpreis geteilt durch die maximale Dosis (mg) des Pens.
+Weitere Bereiche, erreichbar über die Navigation im Kopf:
 
-### Benutzeroberfläche und Zusammenfassung
-Die Webseite ist in zwei Spalten aufgeteilt:
-- **Linke Spalte:** Enthält alle Eingabefelder (Pen-Auswahl, Klicks, Dosis, Wochen) und einen Reset-Button.
-- **Rechte Spalte:** Zeigt die Preisinformationen an.
-  
-Unterhalb der beiden Spalten befindet sich ein Zusammenfassungsbereich. Hier wird eine kurze, aussagekräftige Beschreibung ausgegeben, die alle aktuellen Eingabewerte zusammenfasst – inklusive der berechneten Dosenanzahl, Wirkstoffmenge pro Woche und den entsprechenden Kosten. Zusätzlich wird die zugrundeliegende Lookup-Matrix in tabellarischer Form dargestellt.
+- **Dosis-Tabelle** – Dosis in mg für 1–60 Klicks und alle sechs Pens; Auswahl hervorgehoben, Klick auf einen Wert übernimmt ihn in den Rechner.
+- **So funktioniert’s** – alle Rechenwege transparent erklärt.
+
+Außerdem: Deutsch/Englisch, helles/dunkles Farbschema, **teilbare Links** (der aktuelle Stand steckt in der URL, z. B. `?pen=10&mode=dose&v=2.5`) und lokale Speicherung der Eingaben.
+
+## Rechenmodell
+
+| Annahme | Wert |
+|---|---|
+| Klicks für die volle Dosis eines Pens | 60 |
+| Gesamtklicks pro Pen | 300 (anpassbar) |
+| Anwendungen | 1 pro Woche |
+
+- **Klicks → Dosis:** lineare Interpolation über eine Lookup-Tabelle mit den Referenzpunkten 0 / 30 / 60 Klicks:
+  `y = y₁ + (x − x₁) · (y₂ − y₁) / (x₂ − x₁)`
+- **Dosis → Klicks:** Umkehrung derselben Tabelle, **immer abgerundet** – so kommt nie mehr als die gewünschte Dosis heraus. Liegt die Wunschdosis zwischen zwei Klicks, weist der Rechner darauf hin.
+- **Wochen → Klicks:** größte Klickzahl, mit der der Pen noch mindestens so lange reicht: `min(60, floor(300 / Wochen))`. Geht eine Wochenzahl nicht exakt auf (z. B. 19 Wochen → 15 Klicks → reicht sogar 20 Wochen), wird das angezeigt.
+- **Reichweite:** `floor(300 / Klicks)` volle Wochen; ein Rest wird in Klicks und mg ausgewiesen.
+- **Kosten:** pro Woche = Pen-Preis ÷ volle Wochen, pro mg = Kosten pro Woche ÷ Dosis, pro Monat = Kosten pro Woche × 4,35.
+
+Ungültige Eingaben (z. B. mehr als 60 Klicks, mehr als die Pen-Stärke, keine ganze Woche) werden direkt am Feld erklärt; wo sinnvoll wird mit dem nächsten gültigen Wert weitergerechnet.
+
+## Projektstruktur
+
+```
+index.html            Seitenstruktur (semantisches HTML, Icon-Sprite)
+assets/css/styles.css Design-Tokens (hell/dunkel), Layout, Komponenten
+assets/js/calc.js     Rechenkern – reine Funktionen, ohne DOM, testbar
+assets/js/i18n.js     Alle Texte (Deutsch/Englisch)
+assets/js/app.js      Oberfläche: Zustand → Berechnung → Anzeige
+assets/js/theme-init.js  Setzt das gespeicherte Farbschema vor dem ersten Rendern
+assets/img/favicon.svg   Logo/Favicon
+tests/calc.test.js    Unit-Tests für den Rechenkern
+```
+
+**Architektur:** Ein einziges Zustandsobjekt ist die Quelle der Wahrheit. `derive()` berechnet daraus über `calc.js` alle Werte, `render()` schreibt sie ins DOM. Dadurch können sich Felder nicht mehr gegenseitig überschreiben, und jede Rechenregel ist ohne Browser testbar.
 
 ## Installation & Nutzung
 
-1. **Repository klonen oder herunterladen:**  
-   Lade das Repository auf deinen Rechner.
+1. **Lokal:** Repository herunterladen und `index.html` per Doppelklick im Browser öffnen – es ist kein Server und kein Build-Schritt nötig.
+2. **GitHub Pages:** In den Repository-Einstellungen unter „Pages“ den Branch (z. B. `main`) und den Ordner `/ (root)` wählen.
+3. **Tests** (optional, Node.js ≥ 18, keine Abhängigkeiten):
+   ```bash
+   npm test
+   ```
 
-2. **Lokale Ausführung:**  
-   Öffne die HTML-Datei in einem Browser, um den Kalkulator lokal zu testen.
+## Anpassungen
 
-3. **Deployment auf GitHub Pages:**  
-   - Lade den Code in ein öffentliches GitHub-Repository hoch.
-   - Gehe in den Repository-Einstellungen zum Abschnitt „Pages“.
-   - Wähle den Branch (z. B. `main`) und den Ordner (root) als Quelle.
-   - GitHub Pages stellt dir dann eine URL zur Verfügung, unter der dein Projekt live erreichbar ist.
+- **Preise & Pens:** `PENS` in `assets/js/calc.js`.
+- **Referenzpunkte der Interpolation:** `buildLookupTable()` in `assets/js/calc.js` (beliebig viele, streng monoton steigende Punkte möglich).
+- **Gesamtklicks pro Pen:** Standard `DEFAULT_CLICKS_PER_PEN` in `calc.js`, für Nutzer zusätzlich in der Oberfläche einstellbar.
+- **Texte & Übersetzungen:** `assets/js/i18n.js`.
+- **Farben:** Design-Tokens am Anfang von `assets/css/styles.css`.
 
-## Anpassungen & Erweiterungen
+## Barrierefreiheit & Datenschutz
 
-- **Lookup-Tabelle:**  
-  Falls du andere Werte oder zusätzliche Referenzpunkte einfügen möchtest, kannst du die Lookup-Tabelle im JavaScript-Code anpassen.
-
-- **Preisinformationen:**  
-  Die Preiswerte sind als Konstanten definiert und können leicht geändert werden.
-
-- **Fehlerbehandlung:**  
-  Weitere Prüfungen oder Anpassungen können im Code vorgenommen werden, um spezielle Anwendungsfälle abzudecken.
+- Semantisches HTML, echte Formular-Elemente (Radio-Gruppen, Schalter), Sprunglink, sichtbarer Tastaturfokus, vorgelesene Meldungen (`aria-live`), Kontraste nach WCAG 2.1 AA, Unterstützung für reduzierte Bewegung und den Windows-Kontrastmodus.
+- Keine Cookies, kein Tracking, keine CDNs, Web-Fonts oder Fremd-Skripte. Eine strenge Content-Security-Policy erlaubt nur eigene Dateien. Eingaben werden ausschließlich lokal im Browser (`localStorage`) gespeichert.
+- Der „Buy me a click“-Button ist ein einfacher Link – Daten fließen erst, wenn man ihn anklickt.
 
 ## Lizenz
 
-Dieses Projekt steht unter der MIT-Lizenz
+Dieses Projekt steht unter der **MIT-Lizenz** – siehe [LICENSE](LICENSE). Jede Quelldatei trägt einen `SPDX-License-Identifier: MIT`-Kopf mit dem Copyright-Hinweis; bei Weitergabe oder Änderungen müssen Lizenztext und Copyright-Hinweis erhalten bleiben.
+
+Es sind **keine Komponenten Dritter** enthalten: Schriften sind Systemschriften, alle Icons und das Logo wurden für dieses Projekt selbst gezeichnet.
+
+Mounjaro® und KwikPen® sind Marken von Eli Lilly and Company. Dieses Projekt ist unabhängig und steht in keiner Verbindung zu Eli Lilly and Company.
